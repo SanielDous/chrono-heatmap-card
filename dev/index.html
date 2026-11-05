@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chrono Heatmap – Dev</title>
+    <style id="theme"></style>
+    <style>
+      body {
+        margin: 0;
+        background: var(--primary-background-color);
+        color: var(--primary-text-color);
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--divider-color);
+        position: sticky;
+        top: 0;
+        background: var(--primary-background-color);
+        z-index: 10;
+      }
+      header h1 {
+        font-size: 18px;
+        margin: 0 12px 0 0;
+      }
+      header label {
+        font-size: 13px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      main {
+        padding: 16px;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 492px), 492px));
+        gap: 16px;
+        align-items: start;
+      }
+      .item .id {
+        font: 11px monospace;
+        color: var(--secondary-text-color);
+        margin: 0 0 4px 4px;
+      }
+      .playground {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 492px);
+        gap: 16px;
+        margin-top: 24px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 320px;
+        box-sizing: border-box;
+        font: 13px/1.4 monospace;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 8px;
+      }
+      .error {
+        color: #d32f2f;
+        font: 12px monospace;
+        white-space: pre-wrap;
+      }
+      .event-log {
+        font: 12px monospace;
+        color: var(--secondary-text-color);
+      }
+      @media (max-width: 800px) {
+        .playground {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Chrono Heatmap · Dev</h1>
+      <label>Theme <select id="theme-select"><option value="light">light</option><option value="dark">dark</option></select></label>
+      <label>Language <select id="lang-select"><option value="en">en</option><option value="de">de</option></select></label>
+      <label>Now <input id="now-input" type="datetime-local" /></label>
+      <label><input id="playground-toggle" type="checkbox" checked /> Playground</label>
+      <span class="event-log" id="event-log"></span>
+    </header>
+    <main>
+      <section class="gallery" id="gallery"></section>
+      <section class="playground" id="playground">
+        <div>
+          <textarea id="yaml" spellcheck="false"></textarea>
+          <div class="error" id="yaml-error"></div>
+        </div>
+        <div id="playground-card"></div>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

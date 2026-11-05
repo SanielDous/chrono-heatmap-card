@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrono-heatmap-card
+          path: dist/chrono-heatmap-card.js
+          retention-days: 14
+
+  pr-title:
+    name: Conventional PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    # HACS can only validate public repositories; keep it informative until the repo is public.
+    continue-on-error: true
+    steps:
+      - uses: hacs/action@main
+        with:
+          category: plugin
+
+  screenshots:
+    name: Screenshots
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm screenshots
+      - uses: actions/upload-artifact@v4
+        id: upload
+        if: always()
+        with:
+          name: screenshots
+          path: |
+            screenshots/
+            playwright-report/
+          retention-days: 14
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != ''
+        uses: actions/github-script@v8
+        env:
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const marker = '<!-- chrono-heatmap-screenshots -->';
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const icon = process.env.JOB_STATUS === 'success' ? '📸' : '⚠️';
+            const body = `${marker}\n${icon} **Screenshots** for \`${sha}\`: [download artifact](${process.env.ARTIFACT_URL})\n\n` +
+              `Contains every gallery card of the dev page in light/en and dark/de, plus interaction shots.`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

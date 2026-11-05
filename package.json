@@ -1,0 +1,43 @@
+{
+  "name": "chrono-heatmap-card",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Home Assistant card that shows an entity's history as a configurable time-grid heatmap",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.28.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SanielDous/ha-heatmap-card.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "screenshots": "playwright test"
+  },
+  "dependencies": {
+    "@date-fns/tz": "1.5.0",
+    "date-fns": "4.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.1",
+    "eslint": "9.39.5",
+    "globals": "17.11.0",
+    "jsdom": "24.1.3",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.66.0",
+    "vite": "6.4.3",
+    "vitest": "4.1.10",
+    "yaml": "2.9.0"
+  }
+}

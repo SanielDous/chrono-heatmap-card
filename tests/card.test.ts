@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChronoHeatmapCard } from '../src/chrono-heatmap-card';
 import { createMockHass } from '../dev/mock-hass';
 
@@ -58,6 +58,29 @@ describe('chrono-heatmap-card', () => {
     // Oct 24 (24 h) + Oct 25 (DST, 25 h) + Oct 26 (24 h)
     expect(el.shadowRoot!.querySelectorAll('rect.cell').length).toBe(73);
     expect(el.shadowRoot!.querySelector('.legend')?.textContent).toContain('100 %');
+  });
+
+  it('reloads after the throttle window when the state changes inside it', async () => {
+    const el = makeCard({ entity: 'sensor.outdoor_temperature', rows: 1 });
+    await settle(el);
+    const hass = createMockHass({ now: NOW, language: 'en', dark: false });
+    let calls = 0;
+    const callWS = hass.callWS.bind(hass);
+    hass.callWS = (<T>(msg: Record<string, unknown>) => {
+      calls++;
+      return callWS<T>(msg);
+    }) as typeof hass.callWS;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] });
+    try {
+      // new state object inside the 60 s window → no immediate load …
+      el.hass = { ...hass, locale: el.hass!.locale, states: { ...hass.states } };
+      expect(calls).toBe(0);
+      // … but a trailing one when the window ends
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(calls).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('getStubConfig prefers a temperature sensor', () => {

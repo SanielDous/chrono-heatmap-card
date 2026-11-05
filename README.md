@@ -48,7 +48,7 @@ All options (also available in the visual editor, except `scale.steps`):
 | `orientation`     | `horizontal`                                   | `vertical` swaps rows and columns                                                                                                |
 | `source`          | `auto`                                         | `auto` · `statistics` · `history`                                                                                                |
 | `aggregation`     | auto                                           | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
-| `on_states`       | `["on"]`                                       | States counted as "on" for `on_ratio`                                                                                            |
+| `on_states`       | by domain                                      | States counted as "on" for `on_ratio` (default `on`; person/device_tracker `home`, cover `open`, media_player `playing`, …)      |
 | `scale.preset`    | `temperature` for temperatures, else `viridis` | `temperature` · `viridis` · `mono`                                                                                               |
 | `scale.type`      | from preset                                    | `absolute`: step values in entity units · `relative`: step positions 0–1 spread over min..max                                    |
 | `scale.min`/`max` | from data                                      | Fixed range for relative scales                                                                                                  |
@@ -72,7 +72,8 @@ scale:
 
 Notes:
 
-- Times follow your HA profile (time zone _server/local_, first weekday, language).
+- Times follow your HA profile (time zone _server/local_, first weekday, language). DST days keep hours under their wall-clock column; the repeated autumn hour gets an extra column at the end.
+- In time zones with a :30/:45 offset the card always uses history, because statistics are aligned to whole UTC hours.
 - Raw history and 5-minute statistics are kept only as long as the recorder keeps them (default 10 days);
   hourly statistics are kept forever. `minute` columns and on/off entities always use history.
 - Interaction: hover (mouse) or tap (touch) shows a tooltip; click (mouse) or a second tap opens more-info.

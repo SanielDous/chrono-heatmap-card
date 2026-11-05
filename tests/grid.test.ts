@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGrid, gridCells, resolveWeekStart } from '../src/grid';
+import { buildGrid, gridCells, resolveTimeZone, resolveWeekStart } from '../src/grid';
 
 const TZ = 'Europe/Berlin';
 const HOUR = 3_600_000;
@@ -33,25 +33,31 @@ describe('buildGrid', () => {
     const dst = g.rows[0]; // 2026-03-29
     expect(iso(dst.start)).toBe('2026-03-29 00:00');
     expect(dst.cells.filter(Boolean)).toHaveLength(23);
-    expect(dst.cells[23]).toBeNull();
+    // the skipped hour 02:00 stays empty, later hours stay under their wall-clock column
+    expect(dst.cells[2]).toBeNull();
+    expect(iso(dst.cells[3]!.start)).toBe('2026-03-29 03:00');
+    expect(iso(dst.cells[23]!.start)).toBe('2026-03-29 23:00');
     expect(g.columns).toBe(24);
     expect(dst.end - dst.start).toBe(23 * HOUR);
   });
 
-  it('day × hour on autumn DST day has 25 cells', () => {
+  it('day × hour on autumn DST day puts the repeated hour in an extra last column', () => {
     const now = Date.parse('2026-10-25T20:00:00Z');
     const g = buildGrid('day', 'hour', 2, now, TZ, 1);
     const dst = g.rows[1];
     expect(dst.cells.filter(Boolean)).toHaveLength(25);
     expect(g.columns).toBe(25);
     expect(g.rows[0].cells[24]).toBeNull();
+    expect(iso(dst.cells[3]!.start)).toBe('2026-10-25 03:00');
+    expect(iso(dst.cells[24]!.start)).toBe('2026-10-25 02:00'); // second 02:00 (CET)
+    expect(dst.cells[24]!.start - dst.cells[2]!.start).toBe(HOUR);
   });
 
   it('cells never overlap and cover each row without gaps', () => {
     const now = Date.parse('2026-10-25T20:00:00Z');
     const g = buildGrid('week', 'hour', 2, now, TZ, 1);
     for (const r of g.rows) {
-      const cells = r.cells.filter((c) => c !== null);
+      const cells = r.cells.filter((c) => c !== null).sort((a, b) => a!.start - b!.start);
       expect(cells[0]!.start).toBe(r.start);
       expect(cells[cells.length - 1]!.end).toBe(r.end);
       for (let i = 1; i < cells.length; i++) expect(cells[i]!.start).toBe(cells[i - 1]!.end);
@@ -121,5 +127,14 @@ describe('resolveWeekStart', () => {
   it('falls back to the language', () => {
     expect(resolveWeekStart('language', 'de-DE')).toBe(1);
     expect(resolveWeekStart('language', 'en-US')).toBe(0);
+  });
+});
+
+describe('resolveTimeZone', () => {
+  const browser = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  it('uses the server zone unless the profile says local', () => {
+    expect(resolveTimeZone('server', 'Asia/Tokyo')).toBe('Asia/Tokyo');
+    expect(resolveTimeZone(undefined, 'Asia/Tokyo')).toBe('Asia/Tokyo');
+    expect(resolveTimeZone('local', 'Asia/Tokyo')).toBe(browser);
   });
 });

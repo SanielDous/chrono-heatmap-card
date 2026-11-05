@@ -1,6 +1,6 @@
 import { bucketsFromHistory, bucketsFromStatistics, mergeBuckets } from './buckets';
 import type { BaseBucket, HistPoint, StatRow } from './buckets';
-import type { ColumnUnit, NormalizedConfig } from './config';
+import { defaultOnStates, type ColumnUnit, type NormalizedConfig } from './config';
 import type { Grid } from './grid';
 import type { HomeAssistant } from './hass-types';
 
@@ -36,10 +36,40 @@ export function isNumericEntity(
   entityId: string,
   state: string | undefined,
   unit: string | undefined,
+  stateClass?: string,
 ): boolean {
-  if (BINARY_DOMAINS.has(entityId.split('.')[0])) return false;
-  if (unit) return true;
-  return state !== undefined && state.trim() !== '' && Number.isFinite(Number(state));
+  const domain = entityId.split('.')[0];
+  if (BINARY_DOMAINS.has(domain)) return false;
+  if (unit || stateClass) return true;
+  if (state !== undefined && state.trim() !== '' && Number.isFinite(Number(state))) return true;
+  // A transient unavailable/unknown state says nothing about the kind of entity.
+  return (
+    NUMERIC_DOMAINS.has(domain) && (state === undefined || state === 'unavailable' || state === 'unknown')
+  );
+}
+
+const NUMERIC_DOMAINS = new Set(['sensor', 'number', 'input_number', 'counter']);
+
+/**
+ * Hourly/5-minute statistics are aligned to whole UTC hours. In time zones with a :30/:45 offset they do not
+ * line up with local cells, so history must be used there.
+ */
+export function statisticsAlign(timeZone: string, from: number, to: number): boolean {
+  const offsetMinutes = (t: number): number => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    }).formatToParts(t);
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+    const local = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+    return Math.round((local - Math.floor(t / 60_000) * 60_000) / 60_000);
+  };
+  return [from, to, (from + to) / 2].every((t) => offsetMinutes(t) % 60 === 0);
 }
 
 interface StatisticsMetadata {
@@ -120,10 +150,12 @@ export interface LoadResult {
 }
 
 export function chooseSource(
-  opts: Pick<LoadOptions, 'config' | 'mode' | 'statisticsAvailable'>,
+  opts: Pick<LoadOptions, 'config' | 'mode' | 'statisticsAvailable' | 'grid'>,
 ): 'statistics' | 'history' {
-  const { config, mode, statisticsAvailable } = opts;
+  const { config, mode, statisticsAvailable, grid } = opts;
   if (mode === 'binary' || config.column_unit === 'minute') return 'history';
+  // Never put values into the wrong cell: statistics do not line up with :30/:45 time zones.
+  if (!statisticsAlign(grid.timeZone, grid.start, grid.end)) return 'history';
   if (config.source === 'history') return 'history';
   if (config.source === 'statistics') return 'statistics';
   return statisticsAvailable ? 'statistics' : 'history';
@@ -132,6 +164,7 @@ export function chooseSource(
 /** Load base buckets for the visible grid. History fills the time after the last compiled statistic. */
 export async function loadBuckets(hass: HomeAssistant, opts: LoadOptions): Promise<LoadResult> {
   const { config, grid, now, mode } = opts;
+  const onStates = config.on_states ?? defaultOnStates(config.entity);
   const size = baseBucketSize(config.column_unit);
   const to = Math.min(grid.end, now);
   const source = chooseSource(opts);
@@ -140,7 +173,7 @@ export async function loadBuckets(hass: HomeAssistant, opts: LoadOptions): Promi
     const points = await fetchHistory(hass, config.entity, grid.start, to);
     return {
       source,
-      buckets: bucketsFromHistory(points, grid.start, grid.end, size, mode, config.on_states, now),
+      buckets: bucketsFromHistory(points, grid.start, grid.end, size, mode, onStates, now),
     };
   }
 
@@ -152,7 +185,7 @@ export async function loadBuckets(hass: HomeAssistant, opts: LoadOptions): Promi
   let hist: BaseBucket[] = [];
   if (covered < to) {
     const points = await fetchHistory(hass, config.entity, covered, to);
-    hist = bucketsFromHistory(points, covered, grid.end, size, mode, config.on_states, now);
+    hist = bucketsFromHistory(points, covered, grid.end, size, mode, onStates, now);
   }
   return { source, buckets: mergeBuckets(stat, hist) };
 }

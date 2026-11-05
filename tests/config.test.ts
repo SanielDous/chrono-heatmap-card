@@ -25,7 +25,7 @@ describe('normalizeConfig', () => {
     expect(c.orientation).toBe('horizontal');
     expect(c.source).toBe('auto');
     expect(c.aggregation).toBeUndefined();
-    expect(c.on_states).toEqual(['on']);
+    expect(c.on_states).toBeUndefined();
     expect(c.show_legend).toBe(true);
     expect(c.show_labels).toBe(true);
   });

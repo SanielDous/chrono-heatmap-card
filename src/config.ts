@@ -54,7 +54,8 @@ export interface NormalizedConfig {
   source: Source;
   /** undefined = choose from entity (state_class / numeric) */
   aggregation?: Aggregation;
-  on_states: string[];
+  /** undefined = choose from the entity domain (see defaultOnStates) */
+  on_states?: string[];
   scale: NormalizedScale;
   show_legend: boolean;
   show_labels: boolean;
@@ -170,7 +171,7 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     throw new ConfigError('error.rows', { max: MAX_ROWS });
   }
 
-  let on_states = ['on'];
+  let on_states: string[] | undefined;
   if (config.on_states !== undefined) {
     if (!Array.isArray(config.on_states) || config.on_states.length === 0) {
       throw new ConfigError('error.on_states');
@@ -200,4 +201,19 @@ export function defaultAggregation(stateClass: string | undefined, numeric: bool
   if (!numeric) return 'on_ratio';
   if (stateClass === 'total' || stateClass === 'total_increasing') return 'change';
   return 'mean';
+}
+
+const DOMAIN_ON_STATES: Record<string, string[]> = {
+  person: ['home'],
+  device_tracker: ['home'],
+  cover: ['open', 'opening', 'closing'],
+  lock: ['unlocked', 'unlocking', 'open'],
+  media_player: ['playing'],
+  vacuum: ['cleaning'],
+  climate: ['heat', 'cool', 'heat_cool', 'auto', 'dry', 'fan_only'],
+};
+
+/** States that count as "on" for `on_ratio` when `on_states` is not configured. */
+export function defaultOnStates(entityId: string): string[] {
+  return DOMAIN_ON_STATES[entityId.split('.')[0]] ?? ['on'];
 }

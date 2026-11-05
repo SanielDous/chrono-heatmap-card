@@ -67,6 +67,7 @@ export class ChronoHeatmapCard extends HTMLElement {
   private _statsCache = new Map<string, boolean>();
   private _resizeObserver?: ResizeObserver;
   private _timer?: ReturnType<typeof setInterval>;
+  private _pending?: ReturnType<typeof setTimeout>;
   private _pointerType = 'mouse';
   private _renderQueued = false;
 
@@ -150,9 +151,13 @@ export class ChronoHeatmapCard extends HTMLElement {
     const entity = this._config ? hass.states[this._config.entity] : undefined;
     const changed = entity !== this._lastEntity;
     this._lastEntity = entity;
-    if (first || localeChanged) this._scheduleLoad(true);
-    else if (changed && Date.now() - this._lastLoad > RELOAD_THROTTLE_MS) this._scheduleLoad(false);
-    if (first || localeChanged) this._queueRender();
+    if (first || localeChanged) {
+      this._scheduleLoad(true);
+      this._queueRender();
+    } else if (changed) {
+      // throttled: a change inside the window is loaded when the window ends, never dropped
+      this._scheduleLoad(false);
+    }
   }
 
   get hass(): HomeAssistant | undefined {
@@ -173,13 +178,18 @@ export class ChronoHeatmapCard extends HTMLElement {
       });
       this._resizeObserver.observe(this._body);
     }
-    if (this._hass && this._config && !this._values) this._scheduleLoad(true);
+    // back on screen after a while (e.g. view switch): data may be stale
+    if (this._hass && this._config && (!this._values || Date.now() - this._lastLoad > RELOAD_THROTTLE_MS)) {
+      this._scheduleLoad(true);
+    }
     this._queueRender();
   }
 
   disconnectedCallback(): void {
     if (this._timer) clearInterval(this._timer);
     this._timer = undefined;
+    if (this._pending) clearTimeout(this._pending);
+    this._pending = undefined;
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
   }
@@ -197,7 +207,17 @@ export class ChronoHeatmapCard extends HTMLElement {
 
   private _scheduleLoad(force: boolean): void {
     if (!this._hass || !this._config) return;
-    if (!force && Date.now() - this._lastLoad < RELOAD_THROTTLE_MS) return;
+    const elapsed = Date.now() - this._lastLoad;
+    if (!force && elapsed < RELOAD_THROTTLE_MS) {
+      // trailing load at the end of the throttle window
+      this._pending ??= setTimeout(() => {
+        this._pending = undefined;
+        this._scheduleLoad(true);
+      }, RELOAD_THROTTLE_MS - elapsed);
+      return;
+    }
+    if (this._pending) clearTimeout(this._pending);
+    this._pending = undefined;
     this._lastLoad = Date.now();
     void this._load();
   }
@@ -220,7 +240,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const weekStart = resolveWeekStart(hass.locale?.first_weekday, this._lang);
     const grid = buildGrid(config.row_unit, config.column_unit, config.rows, now, tz, weekStart);
     const unit = entity.attributes.unit_of_measurement;
-    const numeric = isNumericEntity(config.entity, entity.state, unit);
+    const numeric = isNumericEntity(config.entity, entity.state, unit, entity.attributes.state_class);
     const requested = config.aggregation ?? defaultAggregation(entity.attributes.state_class, numeric);
     const mode: ValueMode = requested === 'on_ratio' || !numeric ? 'binary' : 'numeric';
     // on/off data has a single meaningful aggregation
@@ -229,8 +249,12 @@ export class ChronoHeatmapCard extends HTMLElement {
     try {
       let statsAvailable = this._statsCache.get(config.entity);
       if (statsAvailable === undefined && mode === 'numeric') {
-        statsAvailable = await hasStatistics(hass, config.entity).catch(() => false);
-        this._statsCache.set(config.entity, statsAvailable);
+        try {
+          statsAvailable = await hasStatistics(hass, config.entity);
+          this._statsCache.set(config.entity, statsAvailable);
+        } catch {
+          statsAvailable = false; // not cached: retried on the next load
+        }
       }
       const { buckets } = await loadBuckets(hass, {
         config,
@@ -334,8 +358,8 @@ export class ChronoHeatmapCard extends HTMLElement {
     if (!cfg) return;
     const entity = this._hass?.states[cfg.entity];
     this._header.textContent =
-      cfg.title ??
-      (entity ? (this._hass?.formatEntityName?.(entity) ?? entity.attributes.friendly_name) : undefined) ??
+      cfg.title ||
+      (entity ? this._hass?.formatEntityName?.(entity) || entity.attributes.friendly_name : undefined) ||
       cfg.entity;
     this._header.title = cfg.entity;
 

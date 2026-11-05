@@ -13,12 +13,23 @@ function dtf(lang: string, timeZone: string, opts: Intl.DateTimeFormatOptions): 
   return f;
 }
 
-export function formatRowLabel(row: GridRow, unit: RowUnit, lang: string, tz: string): string {
+/** `compact` is used where labels sit side by side (vertical orientation). */
+export function formatRowLabel(
+  row: GridRow,
+  unit: RowUnit,
+  lang: string,
+  tz: string,
+  compact = false,
+): string {
   switch (unit) {
     case 'hour':
-      return dtf(lang, tz, { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(row.start);
+      return compact
+        ? dtf(lang, tz, { hour: '2-digit', minute: '2-digit' }).format(row.start)
+        : dtf(lang, tz, { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(row.start);
     case 'day':
-      return dtf(lang, tz, { weekday: 'short', day: 'numeric', month: 'numeric' }).format(row.start);
+      return compact
+        ? dtf(lang, tz, { day: 'numeric', month: 'numeric' }).format(row.start)
+        : dtf(lang, tz, { weekday: 'short', day: 'numeric', month: 'numeric' }).format(row.start);
     case 'week':
       return dtf(lang, tz, { day: 'numeric', month: 'numeric' }).format(row.start);
     case 'month':
@@ -28,8 +39,19 @@ export function formatRowLabel(row: GridRow, unit: RowUnit, lang: string, tz: st
   }
 }
 
-/** Pick the row used for column labels: the latest row that has all columns. */
+/**
+ * Pick the row used for column labels.
+ * Hour columns: a row of the most common length, so a 23/25-hour DST day does not shift the labels.
+ * Otherwise: the latest row that has all columns (e.g. a 31-day month).
+ */
 function referenceRow(grid: Grid): GridRow {
+  if (grid.columnUnit === 'hour') {
+    const count = (r: GridRow) => r.cells.filter((c) => c !== null).length;
+    const freq = new Map<number, number>();
+    for (const r of grid.rows) freq.set(count(r), (freq.get(count(r)) ?? 0) + 1);
+    const common = [...freq.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+    for (let i = grid.rows.length - 1; i >= 0; i--) if (count(grid.rows[i]) === common) return grid.rows[i];
+  }
   for (let i = grid.rows.length - 1; i >= 0; i--) {
     if (grid.rows[i].cells.every((c) => c !== null)) return grid.rows[i];
   }
@@ -55,7 +77,14 @@ export function columnLabels(grid: Grid, lang: string, minSpacing: number): stri
   });
 }
 
-function formatColumn(cell: Cell, unit: ColumnUnit, _row: RowUnit, lang: string, tz: string, index: number): string {
+function formatColumn(
+  cell: Cell,
+  unit: ColumnUnit,
+  _row: RowUnit,
+  lang: string,
+  tz: string,
+  index: number,
+): string {
   switch (unit) {
     case 'minute':
     case '5minute':
@@ -63,9 +92,7 @@ function formatColumn(cell: Cell, unit: ColumnUnit, _row: RowUnit, lang: string,
     case 'hour':
       return dtf('en-GB', tz, { hour: '2-digit', hourCycle: 'h23' }).format(cell.start);
     case 'day':
-      return _row === 'week'
-        ? dtf(lang, tz, { weekday: 'short' }).format(cell.start)
-        : String(index + 1);
+      return _row === 'week' ? dtf(lang, tz, { weekday: 'short' }).format(cell.start) : String(index + 1);
     case 'week':
       return localize(lang, 'ui.week_short', { n: index + 1 });
     case 'month':
@@ -97,7 +124,9 @@ export function formatPeriod(cell: Cell, unit: ColumnUnit, lang: string, tz: str
       return `${start} – ${end}`;
     }
     case 'day':
-      return dtf(lang, tz, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(cell.start);
+      return dtf(lang, tz, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(
+        cell.start,
+      );
     case 'week': {
       const f = dtf(lang, tz, { day: 'numeric', month: 'short', year: 'numeric' });
       return `${f.format(cell.start)} – ${f.format(cell.end - 1)}`;

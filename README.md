@@ -38,23 +38,23 @@ entity: sensor.outdoor_temperature
 
 All options (also available in the visual editor, except `scale.steps`):
 
-| Option         | Default                       | Description                                                                                      |
-| -------------- | ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `entity`       | –                             | Entity to show (required)                                                                        |
-| `title`        | entity name                   | Card title; click opens the more-info dialog                                                     |
-| `row_unit`     | `day`                         | `hour` · `day` · `week` · `month` · `year`                                                       |
-| `column_unit`  | depends on `row_unit`         | see table above                                                                                  |
-| `rows`         | hour 12, day 14, week 8, month 6, year 2 | Number of rows; the last row is the current period                                    |
-| `orientation`  | `horizontal`                  | `vertical` swaps rows and columns                                                                |
-| `source`       | `auto`                        | `auto` · `statistics` · `history`                                                                |
-| `aggregation`  | auto                          | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
-| `on_states`    | `["on"]`                      | States counted as "on" for `on_ratio`                                                            |
-| `scale.preset` | `temperature` for temperatures, else `viridis` | `temperature` · `viridis` · `mono`                                              |
-| `scale.type`   | from preset                   | `absolute`: step values in entity units · `relative`: step positions 0–1 spread over min..max   |
-| `scale.min`/`max` | from data                  | Fixed range for relative scales                                                                  |
-| `scale.steps`  | –                             | Custom color steps (`value`, `color`) – YAML only                                                |
-| `show_legend`  | `true`                        |                                                                                                  |
-| `show_labels`  | `true`                        |                                                                                                  |
+| Option            | Default                                        | Description                                                                                                                      |
+| ----------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `entity`          | –                                              | Entity to show (required)                                                                                                        |
+| `title`           | entity name                                    | Card title; click opens the more-info dialog                                                                                     |
+| `row_unit`        | `day`                                          | `hour` · `day` · `week` · `month` · `year`                                                                                       |
+| `column_unit`     | depends on `row_unit`                          | see table above                                                                                                                  |
+| `rows`            | hour 12, day 14, week 8, month 6, year 2       | Number of rows; the last row is the current period                                                                               |
+| `orientation`     | `horizontal`                                   | `vertical` swaps rows and columns                                                                                                |
+| `source`          | `auto`                                         | `auto` · `statistics` · `history`                                                                                                |
+| `aggregation`     | auto                                           | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
+| `on_states`       | `["on"]`                                       | States counted as "on" for `on_ratio`                                                                                            |
+| `scale.preset`    | `temperature` for temperatures, else `viridis` | `temperature` · `viridis` · `mono`                                                                                               |
+| `scale.type`      | from preset                                    | `absolute`: step values in entity units · `relative`: step positions 0–1 spread over min..max                                    |
+| `scale.min`/`max` | from data                                      | Fixed range for relative scales                                                                                                  |
+| `scale.steps`     | –                                              | Custom color steps (`value`, `color`) – YAML only                                                                                |
+| `show_legend`     | `true`                                         |                                                                                                                                  |
+| `show_labels`     | `true`                                         |                                                                                                                                  |
 
 Example with custom steps:
 
@@ -80,6 +80,10 @@ Notes:
 ## Development
 
 Requirements: Node.js LTS and pnpm (works in WSL2, no Docker needed).
+
+Dependencies are pinned to exact versions, and `pnpm-workspace.yaml` sets `minimumReleaseAge` plus a few
+overrides. This keeps installs working behind npm proxies that only serve versions they have already cached.
+Remove a pin once your registry serves newer versions.
 
 ```bash
 pnpm install

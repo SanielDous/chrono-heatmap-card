@@ -27,10 +27,12 @@ function smooth(seed: number, t: number, period: number): number {
 }
 
 /** Local hour of day in Europe/Berlin-ish (UTC+1/+2 is close enough for fake data). */
-const hourOfDay = (t: number): number => (((t + HOUR) % DAY) + DAY) % DAY / HOUR;
+const hourOfDay = (t: number): number => ((((t + HOUR) % DAY) + DAY) % DAY) / HOUR;
 const dayOfYear = (t: number): number => {
   const d = new Date(t);
-  return (Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(d.getUTCFullYear(), 0, 1)) / DAY;
+  return (
+    (Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(d.getUTCFullYear(), 0, 1)) / DAY
+  );
 };
 
 export interface Scenario {
@@ -72,7 +74,8 @@ const power = (t: number): number => {
   const morning = Math.exp(-((h - 7) ** 2) / 1.5) * 1400;
   const evening = Math.exp(-((h - 19) ** 2) / 3) * 1800;
   const base = 180 + 60 * smooth(21, t, 6 * HOUR);
-  const spike = noise(22, Math.floor(t / (10 * MIN))) > 0.93 ? 1500 + 1000 * noise(23, Math.floor(t / (10 * MIN))) : 0;
+  const spike =
+    noise(22, Math.floor(t / (10 * MIN))) > 0.93 ? 1500 + 1000 * noise(23, Math.floor(t / (10 * MIN))) : 0;
   const weekend = new Date(t).getUTCDay() % 6 === 0 ? 1.3 : 1;
   return Math.max(60, (base + morning + evening) * weekend + spike + 40 * smooth(24, t, 15 * MIN));
 };

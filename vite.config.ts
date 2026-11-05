@@ -8,6 +8,9 @@ export default defineConfig({
   define: {
     __CARD_VERSION__: JSON.stringify(version),
   },
+  // esbuild 0.28 (pinned, see pnpm-workspace.yaml) cannot down-level to Vite 6's default dev target
+  esbuild: { target: 'es2022' },
+  optimizeDeps: { esbuildOptions: { target: 'es2022' } },
   server: {
     // WSL2: listen on all interfaces so the Windows browser can reach the dev server
     host: true,

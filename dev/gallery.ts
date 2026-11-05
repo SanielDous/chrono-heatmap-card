@@ -38,15 +38,31 @@ export const GALLERY: GalleryItem[] = [
   },
   {
     id: 'week-hour-energy',
-    config: { entity: 'sensor.house_energy', title: 'Energy · weeks × hours', row_unit: 'week', column_unit: 'hour', rows: 4 },
+    config: {
+      entity: 'sensor.house_energy',
+      title: 'Energy · weeks × hours',
+      row_unit: 'week',
+      column_unit: 'hour',
+      rows: 4,
+    },
   },
   {
     id: 'month-day-temperature',
-    config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · months × days', row_unit: 'month', rows: 12 },
+    config: {
+      entity: 'sensor.outdoor_temperature',
+      title: 'Outdoor · months × days',
+      row_unit: 'month',
+      rows: 12,
+    },
   },
   {
     id: 'year-month-temperature',
-    config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · years × months', row_unit: 'year', rows: 3 },
+    config: {
+      entity: 'sensor.outdoor_temperature',
+      title: 'Outdoor · years × months',
+      row_unit: 'year',
+      rows: 3,
+    },
   },
   {
     id: 'year-week-energy',

@@ -48,7 +48,15 @@ describe('bucketsFromHistory (numeric)', () => {
   });
 
   it('splits segments over buckets and stops at now', () => {
-    const b = bucketsFromHistory([{ t: T0 - HOUR, s: '5' }], T0, T0 + 3 * HOUR, HOUR, 'numeric', [], T0 + 90 * MIN);
+    const b = bucketsFromHistory(
+      [{ t: T0 - HOUR, s: '5' }],
+      T0,
+      T0 + 3 * HOUR,
+      HOUR,
+      'numeric',
+      [],
+      T0 + 90 * MIN,
+    );
     expect(b.map((x) => x.start)).toEqual([T0, T0 + HOUR]);
     expect(b[1].coverage).toBe(30 * MIN);
   });
@@ -163,7 +171,13 @@ describe('mergeBuckets', () => {
 
 describe('aggregateCells', () => {
   const grid = buildGrid('day', 'hour', 1, T0 + 5 * HOUR, 'UTC', 1);
-  const bucket = (start: number, size: number, mean: number, coverage = size, change: number | null = null) => ({
+  const bucket = (
+    start: number,
+    size: number,
+    mean: number,
+    coverage = size,
+    change: number | null = null,
+  ) => ({
     start,
     end: start + size,
     mean,

@@ -2,7 +2,8 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   'card.name': 'Chrono Heatmap',
-  'card.description': 'Shows the history of an entity as a heatmap with free choice of rows (hours, days, weeks, months, years).',
+  'card.description':
+    'Shows the history of an entity as a heatmap with free choice of rows (hours, days, weeks, months, years).',
   'ui.no_data': 'No data',
   'ui.loading': 'Loading…',
   'ui.entity_not_found': 'Entity not available: {entity}',
@@ -29,7 +30,8 @@ const en: Dict = {
   'editor.title': 'Title',
   'editor.row_unit': 'Rows',
   'editor.column_unit': 'Columns',
-  'editor.column_unit_helper': 'Leave empty for the default. Hour rows: minute or 5 minutes; week rows: day or hour; year rows: month or week.',
+  'editor.column_unit_helper':
+    'Leave empty for the default. Hour rows: minute or 5 minutes; week rows: day or hour; year rows: month or week.',
   'editor.rows': 'Number of rows',
   'editor.orientation': 'Orientation',
   'editor.source': 'Data source',
@@ -93,7 +95,8 @@ const de: Dict = {
   'error.on_states': '„on_states“ muss eine nicht-leere Liste sein.',
   'error.min_max': '„scale.min“ muss kleiner als „scale.max“ sein.',
   'error.steps_count': '„scale.steps“ braucht mindestens zwei Einträge.',
-  'error.step_invalid': 'Eintrag {index} von „scale.steps“ braucht einen numerischen „value“ und eine „color“.',
+  'error.step_invalid':
+    'Eintrag {index} von „scale.steps“ braucht einen numerischen „value“ und eine „color“.',
   'error.relative_steps': 'Bei „scale.type: relative“ müssen die Stufenwerte zwischen 0 und 1 liegen.',
   'error.absolute_needs_steps':
     'Preset „{preset}“ ist relativ; „scale.type: absolute“ braucht eigene „steps“.',
@@ -154,7 +157,11 @@ export function resolveLanguage(lang: string | undefined): string {
   return base in TRANSLATIONS ? base : 'en';
 }
 
-export function localize(lang: string | undefined, key: string, params: Record<string, string | number> = {}): string {
+export function localize(
+  lang: string | undefined,
+  key: string,
+  params: Record<string, string | number> = {},
+): string {
   const dict = TRANSLATIONS[resolveLanguage(lang)];
   const template = dict[key] ?? en[key] ?? key;
   return template.replace(/\{(\w+)\}/g, (m, name: string) => (name in params ? String(params[name]) : m));

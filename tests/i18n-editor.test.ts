@@ -9,7 +9,9 @@ describe('i18n', () => {
   });
 
   it('falls back to English for unknown languages and fills params', () => {
-    expect(localize('fr', 'ui.entity_not_found', { entity: 'sensor.x' })).toBe('Entity not available: sensor.x');
+    expect(localize('fr', 'ui.entity_not_found', { entity: 'sensor.x' })).toBe(
+      'Entity not available: sensor.x',
+    );
     expect(localize('de-DE', 'ui.no_data')).toBe('Keine Daten');
   });
 

@@ -32,7 +32,11 @@ const BINARY_DOMAINS = new Set([
 ]);
 
 /** Whether an entity's states are numbers (sensor values) or discrete states (on/off, home/away). */
-export function isNumericEntity(entityId: string, state: string | undefined, unit: string | undefined): boolean {
+export function isNumericEntity(
+  entityId: string,
+  state: string | undefined,
+  unit: string | undefined,
+): boolean {
   if (BINARY_DOMAINS.has(entityId.split('.')[0])) return false;
   if (unit) return true;
   return state !== undefined && state.trim() !== '' && Number.isFinite(Number(state));
@@ -62,7 +66,9 @@ export async function fetchStatistics(
   to: number,
   period: '5minute' | 'hour',
 ): Promise<StatRow[]> {
-  const res = await hass.callWS<Record<string, (Omit<StatRow, 'start' | 'end'> & { start: number | string; end: number | string })[]>>({
+  const res = await hass.callWS<
+    Record<string, (Omit<StatRow, 'start' | 'end'> & { start: number | string; end: number | string })[]>
+  >({
     type: 'recorder/statistics_during_period',
     start_time: new Date(from).toISOString(),
     end_time: new Date(to).toISOString(),
@@ -81,7 +87,12 @@ interface CompressedState {
   lc?: number;
 }
 
-export async function fetchHistory(hass: HomeAssistant, entityId: string, from: number, to: number): Promise<HistPoint[]> {
+export async function fetchHistory(
+  hass: HomeAssistant,
+  entityId: string,
+  from: number,
+  to: number,
+): Promise<HistPoint[]> {
   const res = await hass.callWS<Record<string, CompressedState[]>>({
     type: 'history/history_during_period',
     start_time: new Date(from).toISOString(),
@@ -108,7 +119,9 @@ export interface LoadResult {
   source: 'statistics' | 'history';
 }
 
-export function chooseSource(opts: Pick<LoadOptions, 'config' | 'mode' | 'statisticsAvailable'>): 'statistics' | 'history' {
+export function chooseSource(
+  opts: Pick<LoadOptions, 'config' | 'mode' | 'statisticsAvailable'>,
+): 'statistics' | 'history' {
   const { config, mode, statisticsAvailable } = opts;
   if (mode === 'binary' || config.column_unit === 'minute') return 'history';
   if (config.source === 'history') return 'history';
@@ -132,7 +145,9 @@ export async function loadBuckets(hass: HomeAssistant, opts: LoadOptions): Promi
   }
 
   const period = config.column_unit === '5minute' ? '5minute' : 'hour';
-  const stat = bucketsFromStatistics(await fetchStatistics(hass, config.entity, grid.start, grid.end, period));
+  const stat = bucketsFromStatistics(
+    await fetchStatistics(hass, config.entity, grid.start, grid.end, period),
+  );
   const covered = stat.length ? stat[stat.length - 1].end : grid.start;
   let hist: BaseBucket[] = [];
   if (covered < to) {

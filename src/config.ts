@@ -114,7 +114,8 @@ function optionalNumber(value: unknown, key: string): number | undefined {
 
 function normalizeScale(scale: ScaleConfig | undefined): NormalizedScale {
   if (scale === undefined || scale === null) return {};
-  if (typeof scale !== 'object') throw new ConfigError('error.invalid_option', { option: 'scale', value: '' });
+  if (typeof scale !== 'object')
+    throw new ConfigError('error.invalid_option', { option: 'scale', value: '' });
   const preset = oneOf(scale.preset, PRESET_NAMES, 'scale.preset');
   let type = oneOf(scale.type, ['absolute', 'relative'] as const, 'scale.type');
   const min = optionalNumber(scale.min, 'scale.min');
@@ -183,7 +184,8 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     row_unit,
     column_unit,
     rows,
-    orientation: oneOf(config.orientation, ['horizontal', 'vertical'] as const, 'orientation') ?? 'horizontal',
+    orientation:
+      oneOf(config.orientation, ['horizontal', 'vertical'] as const, 'orientation') ?? 'horizontal',
     source: oneOf(config.source, ['auto', 'statistics', 'history'] as const, 'source') ?? 'auto',
     aggregation: oneOf(config.aggregation, AGGREGATIONS, 'aggregation'),
     on_states,

@@ -53,7 +53,9 @@ describe('normalizeConfig', () => {
   });
 
   it('rejects unknown option values', () => {
-    expect(errorKey(() => normalizeConfig({ ...base, row_unit: 'decade' as never }))).toBe('error.invalid_option');
+    expect(errorKey(() => normalizeConfig({ ...base, row_unit: 'decade' as never }))).toBe(
+      'error.invalid_option',
+    );
     expect(errorKey(() => normalizeConfig({ ...base, aggregation: 'median' as never }))).toBe(
       'error.invalid_option',
     );
@@ -100,9 +102,9 @@ describe('normalizeConfig', () => {
     expect(errorKey(() => normalizeConfig({ ...base, scale: { preset: 'viridis', type: 'absolute' } }))).toBe(
       'error.absolute_needs_steps',
     );
-    expect(normalizeConfig({ ...base, scale: { preset: 'temperature', type: 'absolute' } }).scale.preset).toBe(
-      'temperature',
-    );
+    expect(
+      normalizeConfig({ ...base, scale: { preset: 'temperature', type: 'absolute' } }).scale.preset,
+    ).toBe('temperature');
   });
 
   it('rejects min >= max', () => {
@@ -110,9 +112,9 @@ describe('normalizeConfig', () => {
   });
 
   it('requires at least two steps', () => {
-    expect(errorKey(() => normalizeConfig({ ...base, scale: { steps: [{ value: 1, color: '#fff' }] } }))).toBe(
-      'error.steps_count',
-    );
+    expect(
+      errorKey(() => normalizeConfig({ ...base, scale: { steps: [{ value: 1, color: '#fff' }] } })),
+    ).toBe('error.steps_count');
   });
 });
 

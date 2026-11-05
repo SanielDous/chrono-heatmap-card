@@ -34,7 +34,11 @@ function statisticsRows(s: Scenario, from: number, to: number, period: '5minute'
   const lastEnd = Math.floor(now / size) * size;
   const oldest = period === '5minute' ? now - RETENTION : -Infinity;
   const rows = [];
-  for (let start = Math.ceil(Math.max(from, oldest) / size) * size; start < to && start + size <= lastEnd; start += size) {
+  for (
+    let start = Math.ceil(Math.max(from, oldest) / size) * size;
+    start < to && start + size <= lastEnd;
+    start += size
+  ) {
     if (s.meter) {
       const a = s.valueAt(start) as number;
       const b = s.valueAt(start + size) as number;

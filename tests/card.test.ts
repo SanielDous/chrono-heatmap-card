@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { ChronoHeatmapCard } from '../src/chrono-heatmap-card';
 import { createMockHass } from '../dev/mock-hass';
@@ -6,9 +6,8 @@ import { createMockHass } from '../dev/mock-hass';
 const NOW = Date.parse('2026-10-26T13:37:00Z');
 
 async function settle(el: ChronoHeatmapCard): Promise<void> {
-  for (let i = 0; i < 20; i++) {
-    await new Promise((r) => setTimeout(r, 5));
-    await el.updateComplete;
+  for (let i = 0; i < 200; i++) {
+    await new Promise((r) => setTimeout(r, 10));
     if (el.shadowRoot?.querySelector('svg.grid, .warning')) return;
   }
 }
@@ -30,9 +29,9 @@ describe('chrono-heatmap-card', () => {
 
   it('throws a readable error for invalid config', () => {
     const el = document.createElement('chrono-heatmap-card') as ChronoHeatmapCard;
-    expect(() => el.setConfig({ type: 'x', entity: 'sensor.a', row_unit: 'day', column_unit: 'minute' })).toThrow(
-      /not possible/,
-    );
+    expect(() =>
+      el.setConfig({ type: 'x', entity: 'sensor.a', row_unit: 'day', column_unit: 'minute' }),
+    ).toThrow(/not possible/);
   });
 
   it('shows a warning for a missing entity', async () => {
@@ -47,20 +46,25 @@ describe('chrono-heatmap-card', () => {
     const rects = el.shadowRoot!.querySelectorAll('rect.cell');
     // 13 normal days × 24 + DST day 25 (2026-10-25)
     expect(rects.length).toBe(13 * 24 + 25);
-    const colored = [...rects].filter((r) => !r.classList.contains('empty') && !r.classList.contains('future'));
+    const colored = [...rects].filter(
+      (r) => !r.classList.contains('empty') && !r.classList.contains('future'),
+    );
     expect(colored.length).toBeGreaterThan(300);
   });
 
   it('renders on/off ratio for a binary sensor from history', async () => {
     const el = makeCard({ entity: 'binary_sensor.front_door', rows: 3 });
     await settle(el);
-    expect(el.shadowRoot!.querySelectorAll('rect.cell').length).toBe(72);
+    // Oct 24 (24 h) + Oct 25 (DST, 25 h) + Oct 26 (24 h)
+    expect(el.shadowRoot!.querySelectorAll('rect.cell').length).toBe(73);
     expect(el.shadowRoot!.querySelector('.legend')?.textContent).toContain('100 %');
   });
 
   it('getStubConfig prefers a temperature sensor', () => {
     const hass = createMockHass({ now: NOW, language: 'en', dark: false });
-    expect(ChronoHeatmapCard.getStubConfig(hass, ['sensor.house_power', 'sensor.outdoor_temperature'])).toEqual({
+    expect(
+      ChronoHeatmapCard.getStubConfig(hass, ['sensor.house_power', 'sensor.outdoor_temperature']),
+    ).toEqual({
       entity: 'sensor.outdoor_temperature',
     });
   });

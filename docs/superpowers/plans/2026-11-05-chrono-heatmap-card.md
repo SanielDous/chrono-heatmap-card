@@ -75,17 +75,41 @@ e2e/screenshots.spec.ts    Playwright screenshots
 **Files:** src/config.ts, tests/config.test.ts
 
 **Produces:**
+
 ```ts
-type RowUnit = 'hour'|'day'|'week'|'month'|'year';
-type ColumnUnit = 'minute'|'5minute'|'hour'|'day'|'week'|'month';
-type Aggregation = 'mean'|'min'|'max'|'sum'|'last'|'change'|'on_ratio';
-interface CardConfig { type: string; entity: string; title?: string; row_unit?: RowUnit; column_unit?: ColumnUnit; rows?: number; orientation?: 'horizontal'|'vertical'; source?: 'auto'|'statistics'|'history'; aggregation?: Aggregation; on_states?: string[]; scale?: ScaleConfig; show_legend?: boolean; show_labels?: boolean; }
-interface ScaleConfig { preset?: 'temperature'|'viridis'|'mono'; type?: 'absolute'|'relative'; min?: number; max?: number; steps?: {value:number;color:string}[] }
-interface NormalizedConfig { /* all required, aggregation may be 'auto' until entity known */ }
-const ALLOWED_COLUMNS: Record<RowUnit, ColumnUnit[]>  // first = default
-const DEFAULT_ROWS: Record<RowUnit, number> // hour 12, day 14, week 8, month 6, year 2
-function normalizeConfig(c: CardConfig): NormalizedConfig // throws ConfigError(key, params)
+type RowUnit = 'hour' | 'day' | 'week' | 'month' | 'year';
+type ColumnUnit = 'minute' | '5minute' | 'hour' | 'day' | 'week' | 'month';
+type Aggregation = 'mean' | 'min' | 'max' | 'sum' | 'last' | 'change' | 'on_ratio';
+interface CardConfig {
+  type: string;
+  entity: string;
+  title?: string;
+  row_unit?: RowUnit;
+  column_unit?: ColumnUnit;
+  rows?: number;
+  orientation?: 'horizontal' | 'vertical';
+  source?: 'auto' | 'statistics' | 'history';
+  aggregation?: Aggregation;
+  on_states?: string[];
+  scale?: ScaleConfig;
+  show_legend?: boolean;
+  show_labels?: boolean;
+}
+interface ScaleConfig {
+  preset?: 'temperature' | 'viridis' | 'mono';
+  type?: 'absolute' | 'relative';
+  min?: number;
+  max?: number;
+  steps?: { value: number; color: string }[];
+}
+interface NormalizedConfig {
+  /* all required, aggregation may be 'auto' until entity known */
+}
+const ALLOWED_COLUMNS: Record<RowUnit, ColumnUnit[]>; // first = default
+const DEFAULT_ROWS: Record<RowUnit, number>; // hour 12, day 14, week 8, month 6, year 2
+function normalizeConfig(c: CardConfig): NormalizedConfig; // throws ConfigError(key, params)
 ```
+
 - [ ] Tests: missing entity throws; `day`+`minute` throws; defaults applied; `rows` < 1 throws; relative steps outside 0–1 throw; `type: absolute` with viridis w/o steps throws; custom steps default absolute.
 - [ ] Implement, pass, commit `feat: config normalization`.
 
@@ -94,12 +118,15 @@ function normalizeConfig(c: CardConfig): NormalizedConfig // throws ConfigError(
 **Files:** src/grid.ts, tests/grid.test.ts
 
 **Produces:**
+
 ```ts
 interface Cell { start: number; end: number; row: number; col: number } // epoch ms, [start,end)
 interface Grid { rows: { start:number; end:number; cells: (Cell|null)[] }[]; columns: number }
 function buildGrid(rowUnit, colUnit, rowCount, now: number, tz: string, weekStartsOn: 0..6): Grid
 ```
+
 Column index rules: minute/5minute = minutes since row start / size; hour = ordinal hour since row start (so DST days give 23/25); day in week = days since week start; day in month = date−1; month in year = month; week in year = spec 4.10 #3. Grid width = max cells over rows; shorter rows padded with `null`.
+
 - [ ] Tests: day×hour on Europe/Berlin 2026-03-29 has 23 cells + null; 2026-10-25 has 25; month×day Feb has 28 + 3 null; week starts Monday vs Sunday; year×week: 2026 with Monday start → week 0 starts 2026-01-05, Jan 1–4 belong to 2025's last column; hour×5minute has 12 cols; last row contains `now`.
 - [ ] Implement with `TZDate` + date-fns, pass, commit `feat: tz-aware grid layout`.
 
@@ -108,16 +135,49 @@ Column index rules: minute/5minute = minutes since row start / size; hour = ordi
 **Files:** src/buckets.ts, tests/buckets.test.ts
 
 **Produces:**
+
 ```ts
-interface BaseBucket { start:number; end:number; mean:number; min:number; max:number; last:number; change:number; onRatio?:number; coverage:number }
-interface StatRow { start:number; end:number; mean?:number|null; min?:number|null; max?:number|null; state?:number|null; sum?:number|null; change?:number|null }
-interface HistPoint { t:number; s:string }
-function bucketsFromStatistics(rows: StatRow[]): BaseBucket[]
-function bucketsFromHistory(points: HistPoint[], from:number, to:number, sizeMs:number, mode:'numeric'|'binary', onStates:string[], now:number): BaseBucket[]
-function mergeBuckets(stat: BaseBucket[], hist: BaseBucket[]): BaseBucket[] // hist only where no stat bucket covers
-function aggregateCells(grid: Grid, buckets: BaseBucket[], agg: Aggregation): (number|null)[][]
+interface BaseBucket {
+  start: number;
+  end: number;
+  mean: number;
+  min: number;
+  max: number;
+  last: number;
+  change: number;
+  onRatio?: number;
+  coverage: number;
+}
+interface StatRow {
+  start: number;
+  end: number;
+  mean?: number | null;
+  min?: number | null;
+  max?: number | null;
+  state?: number | null;
+  sum?: number | null;
+  change?: number | null;
+}
+interface HistPoint {
+  t: number;
+  s: string;
+}
+function bucketsFromStatistics(rows: StatRow[]): BaseBucket[];
+function bucketsFromHistory(
+  points: HistPoint[],
+  from: number,
+  to: number,
+  sizeMs: number,
+  mode: 'numeric' | 'binary',
+  onStates: string[],
+  now: number,
+): BaseBucket[];
+function mergeBuckets(stat: BaseBucket[], hist: BaseBucket[]): BaseBucket[]; // hist only where no stat bucket covers
+function aggregateCells(grid: Grid, buckets: BaseBucket[], agg: Aggregation): (number | null)[][];
 ```
+
 Base bucket size: minute → 1 min, 5minute → 5 min, otherwise 1 h. History: step function; time-weighted mean; non-numeric states in numeric mode are gaps; change = last − first with drops treated as reset (add new value); future part excluded. `sum` = sum of bucket means.
+
 - [ ] Tests: time-weighted mean; `unavailable` gap not zero; binary on_ratio 0.25; meter reset; merge prefers statistics, no overlap; aggregateCells mean weights by coverage, `change` sums, empty cell → null.
 - [ ] Implement, pass, commit `feat: base buckets and cell aggregation`.
 
@@ -126,6 +186,7 @@ Base bucket size: minute → 1 min, 5minute → 5 min, otherwise 1 h. History: s
 **Files:** src/scale.ts, tests/scale.test.ts
 
 **Produces:** `PRESETS`, `resolveScale(cfg: NormalizedConfig['scale'], unit: string|undefined, values: number[], isRatio: boolean): ResolvedScale` with `{ stops:{value:number;color:string}[], min:number, max:number }` (stops in raw units), `colorFor(scale, v): string`.
+
 - [ ] Tests: temperature preset °F conversion (20 °C stop → 68); relative with data min/max; on_ratio fixed 0..1; interpolation midpoint; clamp outside range; all-equal values do not divide by zero.
 - [ ] Implement, pass, commit `feat: color scales`.
 
@@ -134,6 +195,7 @@ Base bucket size: minute → 1 min, 5minute → 5 min, otherwise 1 h. History: s
 **Files:** src/i18n.ts, src/editor.ts, tests/i18n.test.ts, tests/editor.test.ts
 
 **Produces:** `localize(lang: string, key: string, params?: Record<string,string|number>): string`; `getConfigFormSchema()` returning `{ schema, computeLabel, computeHelper, assertConfig }`.
+
 - [ ] Tests: every en key exists in de; unknown lang → en; assertConfig throws when `scale.steps` set; schema field names ⊆ CardConfig keys.
 - [ ] Implement, pass, commit `feat: i18n and visual editor schema`.
 
@@ -150,12 +212,14 @@ Base bucket size: minute → 1 min, 5minute → 5 min, otherwise 1 h. History: s
 ### Task 8: Dev page with mock hass
 
 **Files:** dev/*, vite.config.ts (dev root)
+
 - [ ] Mock hass answering the 3 WS commands from seeded scenarios (temperature, power, energy meter, binary door, gaps); fixed `now` via `?now=` query param; theme/lang toggles; gallery + YAML playground; `ha-card` shim with HA-like CSS variables.
 - [ ] Verify manually via Playwright screenshot locally. Commit `feat: dev page with mock data`.
 
 ### Task 9: Screenshots in CI + docs
 
 **Files:** playwright.config.ts, e2e/screenshots.spec.ts, ci.yml, README.md
+
 - [ ] Screenshot each gallery card, light+dark, en+de, fixed now; upload artifact; sticky PR comment with artifact URL.
 - [ ] README: install (HACS custom repo / manual), config reference, dev workflow.
 - [ ] Commit `ci: playwright screenshots`, `docs: readme`.

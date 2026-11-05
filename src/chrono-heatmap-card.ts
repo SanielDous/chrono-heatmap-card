@@ -1,4 +1,3 @@
-import { css, html, LitElement, nothing, svg, type PropertyValues, type TemplateResult } from 'lit';
 import { aggregateCells } from './buckets';
 import {
   ConfigError,
@@ -11,16 +10,24 @@ import {
 import { hasStatistics, isNumericEntity, loadBuckets, type ValueMode } from './data';
 import { getConfigFormSchema } from './editor';
 import { columnLabels, columnLabelWidth, formatPeriod, formatRowLabel, formatValue } from './format';
-import { buildGrid, resolveTimeZone, resolveWeekStart, type Cell, type Grid } from './grid';
+import { buildGrid, resolveTimeZone, resolveWeekStart, type Grid } from './grid';
 import type { HassEntity, HomeAssistant } from './hass-types';
 import { localize } from './i18n';
 import { colorFor, legendGradient, resolveScale, type ResolvedScale } from './scale';
+import { STYLES } from './styles';
 
 export const CARD_TAG = 'chrono-heatmap-card';
 const VERSION = typeof __CARD_VERSION__ === 'string' ? __CARD_VERSION__ : 'dev';
 
 const RELOAD_THROTTLE_MS = 60_000;
 const REFRESH_INTERVAL_MS = 5 * 60_000;
+
+/** Escape text for use in HTML/SVG content and attribute values. */
+const esc = (s: string | number): string =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
 
 interface Layout {
   width: number;
@@ -36,33 +43,24 @@ interface Layout {
 interface TooltipState {
   row: number;
   col: number;
-  x: number;
-  y: number;
   touch: boolean;
 }
 
-export class ChronoHeatmapCard extends LitElement {
-  static override properties = {
-    _config: { state: true },
-    _values: { state: true },
-    _error: { state: true },
-    _loading: { state: true },
-    _width: { state: true },
-    _tooltip: { state: true },
-  };
-
+/**
+ * Plain custom element (no framework): the grid is rendered as one SVG string whenever data or size
+ * changes; the tooltip is a separate element so hovering never re-renders the grid.
+ */
+export class ChronoHeatmapCard extends HTMLElement {
   private _hass?: HomeAssistant;
-  declare private _config?: NormalizedConfig;
-  declare private _values?: (number | null)[][];
-  declare private _error?: string;
-  declare private _loading: boolean;
-  declare private _width: number;
-  declare private _tooltip?: TooltipState;
-
+  private _config?: NormalizedConfig;
+  private _values?: (number | null)[][];
+  private _error?: string;
   private _grid?: Grid;
   private _scale?: ResolvedScale;
   private _agg: Aggregation = 'mean';
   private _unit?: string;
+  private _width = 0;
+  private _tooltip?: TooltipState;
   private _lastLoad = 0;
   private _lastEntity?: HassEntity;
   private _loadSeq = 0;
@@ -70,13 +68,38 @@ export class ChronoHeatmapCard extends LitElement {
   private _resizeObserver?: ResizeObserver;
   private _timer?: ReturnType<typeof setInterval>;
   private _pointerType = 'mouse';
+  private _renderQueued = false;
+
+  private readonly _root: ShadowRoot;
+  private readonly _header: HTMLElement;
+  private readonly _body: HTMLElement;
+  private readonly _content: HTMLElement;
+  private readonly _tooltipEl: HTMLElement;
+  private readonly _legend: HTMLElement;
+
   /** Fixed "now" for tests and the dev page. */
   public now?: number;
 
   constructor() {
     super();
-    this._loading = false;
-    this._width = 0;
+    this._root = this.attachShadow({ mode: 'open' });
+    this._root.innerHTML = `<style>${STYLES}</style>
+      <ha-card>
+        <div class="header" part="header"></div>
+        <div class="body"><div class="content"></div><div class="tooltip" hidden></div></div>
+        <div class="legend" hidden></div>
+      </ha-card>`;
+    this._header = this._root.querySelector('.header')!;
+    this._body = this._root.querySelector('.body')!;
+    this._content = this._root.querySelector('.content')!;
+    this._tooltipEl = this._root.querySelector('.tooltip')!;
+    this._legend = this._root.querySelector('.legend')!;
+
+    this._header.addEventListener('click', () => this._openMoreInfo());
+    this._content.addEventListener('pointerdown', (ev) => (this._pointerType = ev.pointerType || 'mouse'));
+    this._content.addEventListener('pointermove', (ev) => this._onPointerMove(ev));
+    this._content.addEventListener('pointerleave', (ev) => this._onPointerLeave(ev));
+    this._content.addEventListener('click', (ev) => this._onClick(ev));
   }
 
   // ---- HA card API -------------------------------------------------------
@@ -114,8 +137,10 @@ export class ChronoHeatmapCard extends LitElement {
       throw e;
     }
     this._values = undefined;
-    this._lastLoad = 0;
+    this._error = undefined;
+    this._tooltip = undefined;
     this._scheduleLoad(true);
+    this._queueRender();
   }
 
   set hass(hass: HomeAssistant) {
@@ -127,7 +152,7 @@ export class ChronoHeatmapCard extends LitElement {
     this._lastEntity = entity;
     if (first || localeChanged) this._scheduleLoad(true);
     else if (changed && Date.now() - this._lastLoad > RELOAD_THROTTLE_MS) this._scheduleLoad(false);
-    else if (changed) this.requestUpdate();
+    if (first || localeChanged) this._queueRender();
   }
 
   get hass(): HomeAssistant | undefined {
@@ -136,40 +161,36 @@ export class ChronoHeatmapCard extends LitElement {
 
   // ---- lifecycle ----------------------------------------------------------
 
-  override connectedCallback(): void {
-    super.connectedCallback();
+  connectedCallback(): void {
     this._timer = setInterval(() => this._scheduleLoad(true), REFRESH_INTERVAL_MS);
+    if (typeof ResizeObserver !== 'undefined' && !this._resizeObserver) {
+      this._resizeObserver = new ResizeObserver((entries) => {
+        const w = Math.floor(entries[0].contentRect.width);
+        if (w > 0 && w !== this._width) {
+          this._width = w;
+          this._queueRender();
+        }
+      });
+      this._resizeObserver.observe(this._body);
+    }
     if (this._hass && this._config && !this._values) this._scheduleLoad(true);
+    this._queueRender();
   }
 
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
+  disconnectedCallback(): void {
     if (this._timer) clearInterval(this._timer);
+    this._timer = undefined;
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
   }
 
-  protected override firstUpdated(_changed: PropertyValues): void {
-    this._observeSize();
-  }
-
-  protected override updated(_changed: PropertyValues): void {
-    this._observeSize();
-  }
-
-  private _observeSize(): void {
-    if (this._resizeObserver || typeof ResizeObserver === 'undefined') return;
-    const el = this.renderRoot.querySelector('.body');
-    if (!el) return;
-    this._resizeObserver = new ResizeObserver((entries) => {
-      const w = Math.floor(entries[0].contentRect.width);
-      if (w > 0 && w !== this._width) this._width = w;
-    });
-    this._resizeObserver.observe(el);
-  }
-
   private get _lang(): string {
-    return this._hass?.locale?.language ?? this._hass?.language ?? document.documentElement.lang ?? 'en';
+    return (
+      this._hass?.locale?.language ??
+      this._hass?.language ??
+      (typeof document !== 'undefined' ? document.documentElement.lang : '') ??
+      'en'
+    );
   }
 
   // ---- data -----------------------------------------------------------------
@@ -190,6 +211,7 @@ export class ChronoHeatmapCard extends LitElement {
     if (!entity) {
       this._error = localize(this._lang, 'ui.entity_not_found', { entity: config.entity });
       this._values = undefined;
+      this._queueRender();
       return;
     }
 
@@ -199,10 +221,11 @@ export class ChronoHeatmapCard extends LitElement {
     const grid = buildGrid(config.row_unit, config.column_unit, config.rows, now, tz, weekStart);
     const unit = entity.attributes.unit_of_measurement;
     const numeric = isNumericEntity(config.entity, entity.state, unit);
-    const agg = config.aggregation ?? defaultAggregation(entity.attributes.state_class, numeric);
-    const mode: ValueMode = agg === 'on_ratio' || !numeric ? 'binary' : 'numeric';
+    const requested = config.aggregation ?? defaultAggregation(entity.attributes.state_class, numeric);
+    const mode: ValueMode = requested === 'on_ratio' || !numeric ? 'binary' : 'numeric';
+    // on/off data has a single meaningful aggregation
+    const agg: Aggregation = mode === 'binary' ? 'on_ratio' : requested;
 
-    this._loading = !this._values;
     try {
       let statsAvailable = this._statsCache.get(config.entity);
       if (statsAvailable === undefined && mode === 'numeric') {
@@ -217,16 +240,15 @@ export class ChronoHeatmapCard extends LitElement {
         statisticsAvailable: statsAvailable ?? false,
       });
       if (seq !== this._loadSeq) return;
-      const values = aggregateCells(grid, buckets, mode === 'binary' && agg !== 'on_ratio' ? 'on_ratio' : agg);
-      const flat = values.flat().filter((v): v is number => v !== null);
+      const values = aggregateCells(grid, buckets, agg);
       this._grid = grid;
-      this._agg = mode === 'binary' && agg !== 'on_ratio' ? 'on_ratio' : agg;
-      this._unit = this._agg === 'on_ratio' ? undefined : unit;
+      this._agg = agg;
+      this._unit = agg === 'on_ratio' ? undefined : unit;
       this._scale = resolveScale(config.scale, {
         unit,
         deviceClass: entity.attributes.device_class,
-        values: flat,
-        isRatio: this._agg === 'on_ratio',
+        values: values.flat().filter((v): v is number => v !== null),
+        isRatio: agg === 'on_ratio',
       });
       this._error = undefined;
       this._values = values;
@@ -234,9 +256,8 @@ export class ChronoHeatmapCard extends LitElement {
       if (seq !== this._loadSeq) return;
       const message = e instanceof Error ? e.message : ((e as { message?: string })?.message ?? String(e));
       this._error = localize(this._lang, 'ui.load_failed', { message });
-    } finally {
-      if (seq === this._loadSeq) this._loading = false;
     }
+    this._queueRender();
   }
 
   // ---- interaction -------------------------------------------------------------
@@ -252,59 +273,85 @@ export class ChronoHeatmapCard extends LitElement {
     );
   }
 
-  private _cellFromEvent(ev: Event): { row: number; col: number; el: Element } | undefined {
+  private _cellFromEvent(ev: Event): { row: number; col: number } | undefined {
     const el = (ev.target as Element | null)?.closest?.('[data-r]');
     if (!el) return undefined;
-    return { row: Number(el.getAttribute('data-r')), col: Number(el.getAttribute('data-c')), el };
+    return { row: Number(el.getAttribute('data-r')), col: Number(el.getAttribute('data-c')) };
   }
 
-  private _showTooltip(row: number, col: number, el: Element, touch: boolean): void {
-    const body = this.renderRoot.querySelector('.body');
-    if (!body) return;
-    const b = body.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    this._tooltip = { row, col, x: r.left - b.left + r.width / 2, y: r.top - b.top, touch };
-  }
-
-  private _onPointerDown = (ev: PointerEvent): void => {
-    this._pointerType = ev.pointerType || 'mouse';
-  };
-
-  private _onPointerMove = (ev: PointerEvent): void => {
+  private _onPointerMove(ev: PointerEvent): void {
     if (ev.pointerType === 'touch') return;
     const hit = this._cellFromEvent(ev);
     if (!hit) {
-      if (this._tooltip && !this._tooltip.touch) this._tooltip = undefined;
+      if (this._tooltip && !this._tooltip.touch) this._setTooltip(undefined);
       return;
     }
     if (this._tooltip?.row !== hit.row || this._tooltip?.col !== hit.col) {
-      this._showTooltip(hit.row, hit.col, hit.el, false);
+      this._setTooltip({ ...hit, touch: false });
     }
-  };
+  }
 
-  private _onPointerLeave = (ev: PointerEvent): void => {
-    if (ev.pointerType !== 'touch' && this._tooltip && !this._tooltip.touch) this._tooltip = undefined;
-  };
+  private _onPointerLeave(ev: PointerEvent): void {
+    if (ev.pointerType !== 'touch' && this._tooltip && !this._tooltip.touch) this._setTooltip(undefined);
+  }
 
-  private _onClick = (ev: MouseEvent): void => {
+  private _onClick(ev: MouseEvent): void {
     const hit = this._cellFromEvent(ev);
     if (!hit) {
-      this._tooltip = undefined;
+      this._setTooltip(undefined);
       return;
     }
     if (this._pointerType === 'touch') {
       if (this._tooltip?.touch && this._tooltip.row === hit.row && this._tooltip.col === hit.col) {
-        this._tooltip = undefined;
+        this._setTooltip(undefined);
         this._openMoreInfo();
       } else {
-        this._showTooltip(hit.row, hit.col, hit.el, true);
+        this._setTooltip({ ...hit, touch: true });
       }
       return;
     }
     this._openMoreInfo();
-  };
+  }
+
+  private _setTooltip(t: TooltipState | undefined): void {
+    this._tooltip = t;
+    this._renderTooltip();
+  }
 
   // ---- rendering --------------------------------------------------------------
+
+  private _queueRender(): void {
+    if (this._renderQueued) return;
+    this._renderQueued = true;
+    queueMicrotask(() => {
+      this._renderQueued = false;
+      this._render();
+    });
+  }
+
+  private _render(): void {
+    const cfg = this._config;
+    if (!cfg) return;
+    const entity = this._hass?.states[cfg.entity];
+    this._header.textContent =
+      cfg.title ??
+      (entity ? (this._hass?.formatEntityName?.(entity) ?? entity.attributes.friendly_name) : undefined) ??
+      cfg.entity;
+    this._header.title = cfg.entity;
+
+    if (this._error) {
+      this._content.innerHTML = `<div class="warning">${esc(this._error)}</div>`;
+    } else if (!this._values || !this._grid || !this._scale) {
+      this._content.innerHTML = `<div class="loading">${esc(localize(this._lang, 'ui.loading'))}</div>`;
+    } else {
+      this._content.innerHTML = this._gridSvg(this._grid, this._values, this._scale, cfg);
+    }
+
+    const showLegend = cfg.show_legend && !this._error && this._values && this._scale;
+    this._legend.hidden = !showLegend;
+    this._legend.innerHTML = showLegend ? this._legendHtml(this._scale!) : '';
+    this._renderTooltip();
+  }
 
   private _layout(grid: Grid, cfg: NormalizedConfig): Layout {
     const width = Math.max(this._width || 300, 120);
@@ -322,222 +369,98 @@ export class ChronoHeatmapCard extends LitElement {
     return { width, height, cellW, cellH, gap, labelLeft, labelTop, vertical };
   }
 
-  private _renderGrid(grid: Grid, values: (number | null)[][], scale: ResolvedScale, cfg: NormalizedConfig) {
+  private _gridSvg(
+    grid: Grid,
+    values: (number | null)[][],
+    scale: ResolvedScale,
+    cfg: NormalizedConfig,
+  ): string {
     const L = this._layout(grid, cfg);
     const now = this.now ?? Date.now();
     const pitchX = L.cellW + L.gap;
     const pitchY = L.cellH + L.gap;
-    const cells: TemplateResult[] = [];
+    const r = (n: number) => Math.round(n * 100) / 100;
+    const rx = r(Math.min(2, L.cellW / 4));
+    const parts: string[] = [];
+
+    if (cfg.show_labels) {
+      const lang = this._lang;
+      const rowLabels = grid.rows.map((row) =>
+        formatRowLabel(row, cfg.row_unit, lang, grid.timeZone, L.vertical),
+      );
+      // side by side (vertical) labels need roughly 6 px per character; stacked labels need one line
+      const needed = L.vertical ? Math.max(...rowLabels.map((t) => t.length)) * 6 + 6 : 12;
+      const rowStep = Math.max(1, Math.ceil(needed / (L.vertical ? pitchX : pitchY)));
+      grid.rows.forEach((_row, ri) => {
+        if ((grid.rows.length - 1 - ri) % rowStep !== 0) return;
+        const text = esc(rowLabels[ri]);
+        parts.push(
+          L.vertical
+            ? `<text class="label" x="${r(L.labelLeft + ri * pitchX + L.cellW / 2)}" y="${L.labelTop - 4}" text-anchor="middle">${text}</text>`
+            : `<text class="label" x="${L.labelLeft - 6}" y="${r(L.labelTop + ri * pitchY + L.cellH / 2)}" text-anchor="end" dominant-baseline="central">${text}</text>`,
+        );
+      });
+      const spacing = L.vertical ? 12 / pitchY : columnLabelWidth(cfg.column_unit, cfg.row_unit) / pitchX;
+      columnLabels(grid, lang, spacing).forEach((label, ci) => {
+        if (!label) return;
+        // keep top labels inside the card
+        if (!L.vertical && L.labelLeft + ci * pitchX + label.length * 6 > L.width) return;
+        const text = esc(label);
+        parts.push(
+          L.vertical
+            ? `<text class="label" x="${L.labelLeft - 6}" y="${r(L.labelTop + ci * pitchY + L.cellH / 2)}" text-anchor="end" dominant-baseline="central">${text}</text>`
+            : `<text class="label" x="${r(L.labelLeft + ci * pitchX)}" y="${L.labelTop - 5}" text-anchor="start">${text}</text>`,
+        );
+      });
+    }
+
     grid.rows.forEach((row, ri) => {
       row.cells.forEach((cell, ci) => {
         if (!cell) return;
         const v = values[ri]?.[ci] ?? null;
-        const across = L.vertical ? ri : ci;
-        const down = L.vertical ? ci : ri;
-        const x = L.labelLeft + across * pitchX;
-        const y = L.labelTop + down * pitchY;
+        const x = L.labelLeft + (L.vertical ? ri : ci) * pitchX;
+        const y = L.labelTop + (L.vertical ? ci : ri) * pitchY;
         const cls = v === null ? (cell.start > now ? 'cell future' : 'cell empty') : 'cell';
-        const style = v === null ? '' : `fill:${colorFor(scale, v)}`;
-        cells.push(
-          svg`<rect class=${cls} data-r=${ri} data-c=${ci} x=${x} y=${y} width=${L.cellW} height=${L.cellH} rx=${Math.min(2, L.cellW / 4)} style=${style}></rect>`,
+        const style = v === null ? '' : ` style="fill:${esc(colorFor(scale, v))}"`;
+        parts.push(
+          `<rect class="${cls}" data-r="${ri}" data-c="${ci}" x="${r(x)}" y="${r(y)}" width="${r(L.cellW)}" height="${r(L.cellH)}" rx="${rx}"${style}></rect>`,
         );
       });
     });
 
-    const labels: TemplateResult[] = [];
-    if (cfg.show_labels) {
-      const lang = this._lang;
-      // time-period labels (one per grid row)
-      const rowStep = Math.max(1, Math.ceil((L.vertical ? 34 : 12) / (L.vertical ? pitchX : pitchY)));
-      grid.rows.forEach((row, ri) => {
-        if ((grid.rows.length - 1 - ri) % rowStep !== 0) return;
-        const text = formatRowLabel(row, cfg.row_unit, lang, grid.timeZone);
-        if (L.vertical) {
-          labels.push(
-            svg`<text class="label" x=${L.labelLeft + ri * pitchX + L.cellW / 2} y=${L.labelTop - 4} text-anchor="middle">${text}</text>`,
-          );
-        } else {
-          labels.push(
-            svg`<text class="label" x=${L.labelLeft - 6} y=${L.labelTop + ri * pitchY + L.cellH / 2} text-anchor="end" dominant-baseline="central">${text}</text>`,
-          );
-        }
-      });
-      // sub-period labels (one per grid column)
-      const spacing = L.vertical ? 12 / pitchY : columnLabelWidth(cfg.column_unit, cfg.row_unit) / pitchX;
-      columnLabels(grid, lang, spacing).forEach((text, ci) => {
-        if (!text) return;
-        if (L.vertical) {
-          labels.push(
-            svg`<text class="label" x=${L.labelLeft - 6} y=${L.labelTop + ci * pitchY + L.cellH / 2} text-anchor="end" dominant-baseline="central">${text}</text>`,
-          );
-        } else {
-          labels.push(
-            svg`<text class="label" x=${L.labelLeft + ci * pitchX} y=${L.labelTop - 5} text-anchor="start">${text}</text>`,
-          );
-        }
-      });
-    }
-
-    return html`<svg
-      class="grid"
-      width=${L.width}
-      height=${L.height}
-      viewBox="0 0 ${L.width} ${L.height}"
-      role="img"
-      @pointerdown=${this._onPointerDown}
-      @pointermove=${this._onPointerMove}
-      @pointerleave=${this._onPointerLeave}
-      @click=${this._onClick}
-    >
-      ${labels}${cells}
-    </svg>`;
+    return `<svg class="grid" xmlns="http://www.w3.org/2000/svg" width="${r(L.width)}" height="${r(L.height)}" viewBox="0 0 ${r(L.width)} ${r(L.height)}" role="img">${parts.join('')}</svg>`;
   }
 
-  private _renderTooltip() {
+  private _renderTooltip(): void {
     const t = this._tooltip;
     const grid = this._grid;
-    if (!t || !grid || !this._values || !this._config) return nothing;
-    const cell: Cell | null | undefined = grid.rows[t.row]?.cells[t.col];
-    if (!cell) return nothing;
+    const cell = t && grid ? grid.rows[t.row]?.cells[t.col] : undefined;
+    const rect = t ? this._content.querySelector(`rect[data-r="${t.row}"][data-c="${t.col}"]`) : null;
+    if (!t || !grid || !cell || !rect || !this._values) {
+      this._tooltipEl.hidden = true;
+      return;
+    }
     const lang = this._lang;
     const v = this._values[t.row]?.[t.col] ?? null;
     const value = v === null ? localize(lang, 'ui.no_data') : formatValue(v, this._agg, this._unit, lang);
-    const left = Math.min(Math.max(t.x, 70), Math.max(70, this._width - 70));
-    return html`<div class="tooltip" style="left:${left}px;top:${t.y}px">
-      <div class="tt-period">${formatPeriod(cell, grid.columnUnit, lang, grid.timeZone)}</div>
-      <div class="tt-value">${value}</div>
-    </div>`;
+    this._tooltipEl.innerHTML = `<div class="tt-period">${esc(formatPeriod(cell, grid.columnUnit, lang, grid.timeZone))}</div><div class="tt-value">${esc(value)}</div>`;
+    const b = this._body.getBoundingClientRect();
+    const c = rect.getBoundingClientRect();
+    const half = 80;
+    const x = Math.min(Math.max(c.left - b.left + c.width / 2, half), Math.max(half, b.width - half));
+    this._tooltipEl.style.left = `${x}px`;
+    this._tooltipEl.style.top = `${c.top - b.top}px`;
+    this._tooltipEl.hidden = false;
   }
 
-  private _renderLegend(scale: ResolvedScale) {
+  private _legendHtml(scale: ResolvedScale): string {
     const lang = this._lang;
     const fmt = (v: number) =>
       this._agg === 'on_ratio'
         ? `${new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(v * 100)} %`
         : formatValue(v, this._agg, this._unit, lang);
-    return html`<div class="legend">
-      <span class="legend-label">${fmt(scale.min)}</span>
-      <span class="legend-bar" style="background:${legendGradient(scale)}"></span>
-      <span class="legend-label">${fmt(scale.max)}</span>
-    </div>`;
+    return `<span class="legend-label">${esc(fmt(scale.min))}</span><span class="legend-bar" style="background:${esc(legendGradient(scale))}"></span><span class="legend-label">${esc(fmt(scale.max))}</span>`;
   }
-
-  protected override render() {
-    const cfg = this._config;
-    if (!cfg) return nothing;
-    const entity = this._hass?.states[cfg.entity];
-    const title =
-      cfg.title ??
-      (entity ? (this._hass?.formatEntityName?.(entity) ?? entity.attributes.friendly_name) : undefined) ??
-      cfg.entity;
-
-    let body: unknown;
-    if (this._error) body = html`<div class="warning">${this._error}</div>`;
-    else if (!this._values || !this._grid || !this._scale)
-      body = html`<div class="loading">${localize(this._lang, 'ui.loading')}</div>`;
-    else body = this._renderGrid(this._grid, this._values, this._scale, cfg);
-
-    return html`<ha-card>
-      <div class="header" @click=${this._openMoreInfo} title=${cfg.entity}>${title}</div>
-      <div class="body">${body}${this._renderTooltip()}</div>
-      ${cfg.show_legend && this._scale && this._values && !this._error ? this._renderLegend(this._scale) : nothing}
-    </ha-card>`;
-  }
-
-  static override styles = css`
-    :host {
-      display: block;
-      --chm-empty: color-mix(in srgb, var(--primary-text-color, #212121) 9%, transparent);
-      --chm-future: color-mix(in srgb, var(--primary-text-color, #212121) 3%, transparent);
-    }
-    ha-card {
-      padding: 12px 16px 16px;
-      overflow: hidden;
-      height: 100%;
-      box-sizing: border-box;
-    }
-    .header {
-      font-size: var(--ha-card-header-font-size, 1.25rem);
-      font-weight: 500;
-      color: var(--ha-card-header-color, var(--primary-text-color));
-      line-height: 1.6;
-      margin-bottom: 8px;
-      cursor: pointer;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .body {
-      position: relative;
-      width: 100%;
-      min-height: 40px;
-    }
-    svg.grid {
-      display: block;
-      overflow: visible;
-      touch-action: manipulation;
-    }
-    .cell {
-      cursor: pointer;
-    }
-    .cell.empty {
-      fill: var(--chm-empty);
-    }
-    .cell.future {
-      fill: var(--chm-future);
-    }
-    .cell:hover {
-      stroke: var(--primary-text-color, #212121);
-      stroke-width: 1;
-    }
-    .label {
-      font-size: 10px;
-      fill: var(--secondary-text-color, #727272);
-      font-family: inherit;
-      user-select: none;
-    }
-    .tooltip {
-      position: absolute;
-      transform: translate(-50%, calc(-100% - 6px));
-      background: var(--card-background-color, #fff);
-      color: var(--primary-text-color, #212121);
-      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 12px;
-      line-height: 1.4;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      pointer-events: none;
-      white-space: nowrap;
-      z-index: 2;
-    }
-    .tt-value {
-      font-weight: 600;
-    }
-    .legend {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      font-size: 11px;
-      color: var(--secondary-text-color, #727272);
-    }
-    .legend-bar {
-      flex: 1;
-      height: 8px;
-      border-radius: 4px;
-    }
-    .warning {
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--warning-color, #ff9800) 15%, transparent);
-      color: var(--primary-text-color);
-    }
-    .loading {
-      color: var(--secondary-text-color);
-      font-size: 14px;
-    }
-  `;
 }
 
 function rowLabelWidth(unit: NormalizedConfig['row_unit']): number {
@@ -567,7 +490,11 @@ if (!customElements.get(CARD_TAG)) {
     preview: true,
     documentationURL: 'https://github.com/SanielDous/ha-heatmap-card',
   });
-  console.info(`%c CHRONO-HEATMAP-CARD %c ${VERSION} `, 'background:#21918c;color:#fff;font-weight:700', 'background:#444;color:#fff');
+  console.info(
+    `%c CHRONO-HEATMAP-CARD %c ${VERSION} `,
+    'background:#21918c;color:#fff;font-weight:700',
+    'background:#444;color:#fff',
+  );
 }
 
 declare global {

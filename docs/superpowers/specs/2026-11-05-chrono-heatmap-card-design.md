@@ -15,6 +15,7 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 ## 2. Ziele, Nicht-Ziele, Anti-Ziele
 
 **Ziele (v1)**
+
 - Eine Entität pro Karte, alle fünf Reihentypen (hour/day/week/month/year).
 - Numerische Sensoren (Mittel/Min/Max/Summe/Letzter/Änderung) und An/Aus-Entitäten (Anteil „an“).
 - Datenquelle automatisch (Statistik wo möglich, sonst Historie), überschreibbar.
@@ -25,6 +26,7 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 - Dev-Testseite mit Mock-`hass`, CI mit Lint/Typecheck/Tests/Build/Screenshots, automatische Releases, HACS-Custom-Repo-fähig.
 
 **Nicht-Ziele (v1, ggf. später)**
+
 - Mehrere Entitäten pro Karte.
 - Vor-/Zurückblättern in der Zeit.
 - Eigener (custom) Editor, Bearbeitung von Farbstufen im visuellen Editor.
@@ -33,6 +35,7 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 - Aufnahme in den HACS-Standard-Store/Marketplace (später geplant, jetzt nur Custom Repo).
 
 **Anti-Ziele (wäre ein Fehlschlag, auch wenn es „funktioniert“)**
+
 - Abhängigkeit von internen `ha-*`-Elementen außer `ha-card` – HA garantiert sie nicht, und genau das hat 2026
   viele Custom Cards gebrochen.
 - Falsche Zeitzuordnung (Sommerzeit, Zeitzone, Wochenbeginn) – lieber leere Zellen als falsche Werte.
@@ -41,48 +44,58 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 ## 3. Rahmenbedingungen
 
 - Nur aktuelle HA-Version (Stand Nov. 2026); keine Rückwärtskompatibilität.
-- Karte ist ein Standard-Custom-Element, eine einzige gebündelte JS-Datei, alle Abhängigkeiten (inkl. Lit) mitgebündelt.
+- Karte ist ein Standard-Custom-Element, eine einzige gebündelte JS-Datei, alle Abhängigkeiten mitgebündelt.
+- Pakete kommen lokal ausschließlich aus der Firmen-Artifactory (`gb40-npmjs-remote`, nur mit VPN). Sie liefert nur
+  bereits gecachte und gescannte Versionen; neue Versionen hängen. Deshalb exakt gepinnte Abhängigkeiten,
+  `minimumReleaseAge` und Overrides in `pnpm-workspace.yaml`. Die GitHub-CI nutzt die öffentliche Registry.
 - Lokale Umgebung: Windows 11 mit WSL2, **kein Docker Desktop**.
 - Hosting: GitHub, GitHub Actions. Lizenz: MIT (bestehend).
 
 ## 4. Entschiedenes „Wie“
 
 ### 4.1 Name
+
 - Element/Typ: `chrono-heatmap-card` → YAML `type: custom:chrono-heatmap-card`.
 - Bundle: `dist/chrono-heatmap-card.js`. Repo-Name bleibt `ha-heatmap-card`; `hacs.json` setzt `filename`.
-- *(Vorschlag von Claude, vom Nutzer erbeten – kann beim Review geändert werden.)*
+- _(Vorschlag von Claude, vom Nutzer erbeten – kann beim Review geändert werden.)_
 
 ### 4.2 Tech-Stack
-| Bereich | Wahl |
-|---|---|
-| Sprache | TypeScript (strict) |
-| UI | Lit (gebündelt) |
-| Build | Vite im Library-Modus, ein ES-Modul als Ausgabe |
-| Paketmanager | pnpm |
-| Datum/Zeitzone | `date-fns` + `@date-fns/tz` |
-| Farben | eigene kleine Interpolation, keine Farbbibliothek |
-| Rendering | SVG |
-| Unit-Tests | Vitest |
-| Screenshots | Playwright |
-| Lint/Format | ESLint + Prettier |
+
+| Bereich        | Wahl                                                  |
+| -------------- | ----------------------------------------------------- |
+| Sprache        | TypeScript (strict)                                   |
+| UI             | Plain Custom Element mit Shadow DOM, kein Framework\* |
+| Build          | Vite im Library-Modus, ein ES-Modul als Ausgabe       |
+| Paketmanager   | pnpm                                                  |
+| Datum/Zeitzone | `date-fns` + `@date-fns/tz`                           |
+| Farben         | eigene kleine Interpolation, keine Farbbibliothek     |
+| Rendering      | SVG                                                   |
+| Unit-Tests     | Vitest                                                |
+| Screenshots    | Playwright                                            |
+| Lint/Format    | ESLint + Prettier                                     |
+
+\* Ursprünglich Lit. Lit ist über die Artifactory in keiner Version abrufbar (Stand 2026-11-05), daher
+_Claudes Entscheidung während der Umsetzung_: kein Framework. HA erlaubt das ausdrücklich. Die Karte rendert das
+Raster als einen SVG-String, wenn sich Daten oder Größe ändern; der Tooltip ist ein eigenes Element. Ein späterer
+Umstieg auf Lit ist möglich, sobald es verfügbar ist.
 
 ### 4.3 Rasterlogik
 
 Eine **Reihe** ist eine Periode (`row_unit`), eine **Spalte** eine Unterteilung (`column_unit`). Erlaubte Kombinationen:
 
-| `row_unit` | erlaubte `column_unit` (fett = Standard) | Spalten |
-|---|---|---|
-| hour | minute, **5minute** | 60 / 12 |
-| day | **hour** | 24 (23/25 an Sommerzeit-Tagen) |
-| week | **day**, hour | 7 / 168 |
-| month | **day** | 28–31 |
-| year | **month**, week | 12 / 52–53 |
+| `row_unit` | erlaubte `column_unit` (fett = Standard) | Spalten                        |
+| ---------- | ---------------------------------------- | ------------------------------ |
+| hour       | minute, **5minute**                      | 60 / 12                        |
+| day        | **hour**                                 | 24 (23/25 an Sommerzeit-Tagen) |
+| week       | **day**, hour                            | 7 / 168                        |
+| month      | **day**                                  | 28–31                          |
+| year       | **month**, week                          | 12 / 52–53                     |
 
 - `rows` (Anzahl, Standard je `row_unit` sinnvoll, z. B. day → 14): die letzten N Perioden, die aktuelle (angefangene) zuletzt.
 - Kürzere Reihen (Monat mit 28 Tagen, 23-h-Tag) werden **mit leeren Zellen** aufgefüllt; „keine Daten“, „Zukunft“ und
   „fehlend“ sind optisch als leer erkennbar (keine Farbe der Skala).
 - 25-h-Tag (Zeitumstellung Herbst): die doppelte Stunde bekommt eine eigene Spalte, Tage haben dann 25 Spalten –
-  Raster ist so breit wie die längste Reihe. *(Detail-Darstellung ist Builder-Entscheidung, Bedingung: kein Wert wird verschluckt oder doppelt gezählt.)*
+  Raster ist so breit wie die längste Reihe. _(Detail-Darstellung ist Builder-Entscheidung, Bedingung: kein Wert wird verschluckt oder doppelt gezählt.)_
 - `orientation: horizontal | vertical` – horizontal = Reihen untereinander, Zeit innerhalb der Reihe von links nach rechts; vertical vertauscht.
 - Zeitzone, Wochenbeginn und Zahlen/Datumsformat folgen dem HA-Profil des Nutzers (`hass.locale`: Zeitzone server/lokal,
   `first_weekday`, Sprache). Fehlt eine Angabe → Server-Zeitzone (`hass.config.time_zone`) und Locale-Standard.
@@ -90,6 +103,7 @@ Eine **Reihe** ist eine Periode (`row_unit`), eine **Spalte** eine Unterteilung 
 ### 4.4 Daten
 
 **Quelle** – `source: auto | statistics | history` (Standard `auto`):
+
 - `statistics`: WebSocket `recorder/statistics_during_period`. Es werden **nur die Perioden `5minute` und `hour`**
   abgefragt; Tage/Wochen/Monate werden clientseitig aus Stundenwerten gebildet, damit Zeitzone und Wochenbeginn
   exakt dem Nutzerprofil folgen.
@@ -99,36 +113,41 @@ Eine **Reihe** ist eine Periode (`row_unit`), eine **Spalte** eine Unterteilung 
 - Datenlücken aufgrund der Recorder-Aufbewahrung (Historie und 5-Minuten-Statistik, Standard 10 Tage) werden als leere Zellen gezeigt.
 
 **Aggregation** – `aggregation: mean | min | max | sum | last | change | on_ratio`:
+
 - Standard: `state_class: total` / `total_increasing` → `change`; numerisch sonst → `mean`; nicht-numerisch → `on_ratio`.
 - Aus Historie ist `mean` zeitgewichtet. `on_ratio` = zeitgewichteter Anteil der Zelle, in der der Zustand „an“ war (0–100 %).
 - „An“-Zustände: Option `on_states` (Liste), Standard `["on"]`.
 
 **Live-Update**: Ändert sich der Zustand der Entität, wird die aktuelle Zelle aktualisiert. Die Karte soll nicht bei jedem
-`hass`-Update neu rechnen – Abo nur auf das Nötige (z. B. `context-request`) bzw. gedrosselt. *(Mechanik ist Builder-Entscheidung.)*
+`hass`-Update neu rechnen – Abo nur auf das Nötige (z. B. `context-request`) bzw. gedrosselt. _(Mechanik ist Builder-Entscheidung.)_
 
 ### 4.5 Darstellung
 
 **Farbskalen** – genau drei Presets in v1:
+
 1. `temperature` – absolute Skala, mehrfarbiger Verlauf (kalt blau → grün → gelb → orange → rot), Stützwerte in °C;
    bei °F-Einheit umgerechnet. Standard für `device_class: temperature`.
 2. `viridis` – relative Skala (farbenblind-tauglich). Standard für alles andere, inkl. `on_ratio` (0–100 %).
 3. `mono` – relative Skala von transparent/hell zur Theme-Primärfarbe.
 
 Konfiguration:
+
 ```yaml
 scale:
-  preset: temperature        # oder viridis | mono
-  type: absolute | relative  # Preset bringt einen Standard mit
-  min: 0                     # relative Skala: feste Grenzen (sonst aus Daten)
+  preset: temperature # oder viridis | mono
+  type: absolute | relative # Preset bringt einen Standard mit
+  min: 0 # relative Skala: feste Grenzen (sonst aus Daten)
   max: 3000
-  steps:                     # eigene Stufen, nur YAML; überschreibt Preset
-    - { value: 0, color: "#2c7bb6" }
-    - { value: 20, color: "#ffffbf" }
-    - { value: 30, color: "#d7191c" }
+  steps: # eigene Stufen, nur YAML; überschreibt Preset
+    - { value: 0, color: '#2c7bb6' }
+    - { value: 20, color: '#ffffbf' }
+    - { value: 30, color: '#d7191c' }
 ```
+
 Lineare Interpolation zwischen den Stufen.
 
 **Interaktion & Beschriftung** (vom Nutzer so angenommen, wird nach Test nachjustiert):
+
 - Tooltip beim Hovern/Tippen: Zeitraum der Zelle + formatierter Wert mit Einheit (bzw. „keine Daten“).
 - Klick auf die Karte/Zelle öffnet den More-Info-Dialog der Entität (Event `hass-more-info`).
 - Legende mit Farbskala und Min/Max-Werten (`show_legend`, Standard an).
@@ -136,11 +155,13 @@ Lineare Interpolation zwischen den Stufen.
 - Titel `title`, Standard = Name der Entität (`hass.formatEntityName` o. ä.).
 
 **Größe & Theme**
+
 - Zellen passen sich der Kartenbreite an (Mindestgröße, darunter Beschriftung ausdünnen). `getGridOptions`: Standard
   12 Spalten, Höhe `auto`; `getCardSize` für Masonry.
 - Hülle ist `ha-card`; Text, Rahmen, „leer“-Zellen über HA-Theme-Variablen; Hell- und Dunkelmodus.
 
 ### 4.6 Editor & Kartenauswahl
+
 - `getConfigForm()` mit Feldern: entity, title, row_unit, column_unit (nur gültige Optionen sichtbar), rows, orientation,
   source, aggregation, scale.preset/type/min/max, show_legend, show_labels.
 - `assertConfig` deaktiviert den visuellen Editor, wenn `scale.steps` gesetzt ist (nur YAML).
@@ -149,9 +170,11 @@ Lineare Interpolation zwischen den Stufen.
 - `setConfig` validiert und wirft verständliche Fehler (z. B. ungültige Kombination row/column_unit).
 
 ### 4.7 Sprachen
+
 Englisch + Deutsch für alle eigenen Texte (Editor, Tooltip, Legende, Fehler). Auswahl über die HA-Sprache, Fallback Englisch.
 
 ### 4.8 Lokales Dev-Setup
+
 - `pnpm dev` startet den Vite-Devserver mit **Testseite** (Hot Reload). Läuft unter WSL2, kein Docker.
 - Die Testseite enthält:
   - ein **Mock-`hass`**, das die genutzten WebSocket-Befehle (`recorder/statistics_during_period`,
@@ -167,13 +190,14 @@ Englisch + Deutsch für alle eigenen Texte (Editor, Tooltip, Legende, Fehler). A
 - `pnpm build` erzeugt `dist/chrono-heatmap-card.js` zum manuellen Kopieren nach `config/www`.
 
 ### 4.9 CI/CD (GitHub Actions)
+
 - **PR & Push**: install → lint → typecheck → unit tests → build → HACS-Validierung → Playwright-Screenshots der Testseite
   (feste Uhrzeit, feste Seeds, Linux-Runner, hell + dunkel, en + de wo sinnvoll).
 - Screenshots werden als **Artefakt** hochgeladen; ein **PR-Kommentar** verlinkt das Artefakt (bei neuem Push aktualisiert statt neu angelegt).
   Für PRs aus Forks entfällt der Kommentar (nur Artefakt).
 - **Release beim Merge auf `main`**: semantic-release analysiert Conventional Commits, erhöht die Version (SemVer),
   erstellt Tag, GitHub Release mit `chrono-heatmap-card.js` als Asset und pflegt das CHANGELOG.
-- Conventional Commits werden im PR geprüft. *(Claudes Entscheidung: Squash-Merge, PR-Titel wird per Lint geprüft.)*
+- Conventional Commits werden im PR geprüft. _(Claudes Entscheidung: Squash-Merge, PR-Titel wird per Lint geprüft.)_
 
 ## 4.10 Präzisierungen nach Builder-Check (Claudes Entscheidungen)
 
@@ -204,6 +228,7 @@ Englisch + Deutsch für alle eigenen Texte (Editor, Tooltip, Legende, Fehler). A
    `sum` = Summe der Bucket-Mittelwerte, `last` = letzter Wert, `on_ratio` zeitgewichtet).
 
 ## 5. Dem Builder überlassen
+
 - Genauer Code-Aufbau, Dateistruktur, interne Schnittstellen.
 - Mechanik von Abo/Drosselung für Live-Updates.
 - Konkrete Farbwerte der Presets (innerhalb der beschriebenen Charakteristik), Zellabstände, Typografie.
@@ -212,6 +237,7 @@ Englisch + Deutsch für alle eigenen Texte (Editor, Tooltip, Legende, Fehler). A
 - Node-Version (aktuelle LTS), konkrete Action-Versionen.
 
 ## 6. Claudes Entscheidungen (zur Prüfung)
+
 - Name `chrono-heatmap-card`.
 - Nur `5minute`/`hour`-Statistiken abfragen, größere Einheiten clientseitig bilden (wegen Zeitzone/Wochenbeginn).
 - Erlaubte row/column-Kombinationen wie Tabelle 4.3 (inkl. week×hour und year×week).

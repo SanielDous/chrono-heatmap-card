@@ -1,11 +1,4 @@
-import {
-  AGGREGATIONS,
-  COLUMN_UNITS,
-  MAX_ROWS,
-  PRESET_NAMES,
-  ROW_UNITS,
-  type CardConfig,
-} from './config';
+import { AGGREGATIONS, COLUMN_UNITS, MAX_ROWS, PRESET_NAMES, ROW_UNITS, type CardConfig } from './config';
 import { localize } from './i18n';
 
 /* Schema format of HA's `getConfigForm()` (ha-form). Kept loose on purpose: HA owns this format. */

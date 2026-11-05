@@ -20,7 +20,9 @@ for (const v of variants) {
 
     for (const item of GALLERY) {
       test(item.id, async ({ page }) => {
-        await page.goto(`/dev/index.html?now=${NOW}&theme=${v.theme}&lang=${v.lang}&playground=0&only=${item.id}`);
+        await page.goto(
+          `/dev/index.html?now=${NOW}&theme=${v.theme}&lang=${v.lang}&playground=0&only=${item.id}`,
+        );
         await waitForCards(page, 1);
         const card = page.locator('.item chrono-heatmap-card').first();
         await card.screenshot({ path: `${OUT}/${v.theme}-${v.lang}/${item.id}.png` });
@@ -37,7 +39,10 @@ test('tooltip on hover', async ({ page }) => {
   const tooltip = page.locator('chrono-heatmap-card .tooltip');
   await expect(tooltip).toBeVisible();
   await expect(tooltip).toContainText('°C');
-  await page.locator('.item').first().screenshot({ path: `${OUT}/interaction/tooltip.png` });
+  await page
+    .locator('.item')
+    .first()
+    .screenshot({ path: `${OUT}/interaction/tooltip.png` });
 });
 
 test('click opens more-info', async ({ page }) => {
@@ -50,9 +55,15 @@ test('click opens more-info', async ({ page }) => {
 async function waitForCards(page: import('@playwright/test').Page, count: number): Promise<void> {
   // a card is done when it shows either the grid or a warning
   await expect
-    .poll(async () => page.locator('chrono-heatmap-card').evaluateAll((els) =>
-      els.filter((el) => el.shadowRoot?.querySelector('svg.grid, .warning')).length,
-    ))
+    .poll(
+      async () =>
+        page
+          .locator('chrono-heatmap-card')
+          .evaluateAll(
+            (els) => els.filter((el) => el.shadowRoot?.querySelector('svg.grid, .warning')).length,
+          ),
+      { timeout: 30_000 },
+    )
     .toBe(count);
   await page.evaluate(() => document.fonts.ready);
 }

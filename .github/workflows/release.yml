@@ -30,4 +30,7 @@ jobs:
       - name: semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm exec semantic-release
+        # semantic-release is not a project dependency (the local registry does not serve it); run it on demand.
+        run: >-
+          npx --yes -p semantic-release@25 -p @semantic-release/exec@7
+          semantic-release

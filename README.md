@@ -101,6 +101,10 @@ Dependencies are pinned to exact versions, and `pnpm-workspace.yaml` sets `minim
 overrides. This keeps installs working behind npm proxies that only serve versions they have already cached.
 Remove a pin once your registry serves newer versions.
 
+[Renovate](https://docs.renovatebot.com/) opens update PRs on Mondays (`renovate.json`): only versions at least
+30 days old (same as `minimumReleaseAge`), small devDependency updates grouped, Playwright separately (it needs a
+matching local browser: `pnpm exec playwright install chromium`).
+
 ```bash
 pnpm install
 pnpm dev          # dev page with mock data + hot reload → http://localhost:5173/dev/index.html

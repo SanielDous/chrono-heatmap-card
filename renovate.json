@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 7am on monday"],
+  "minimumReleaseAge": "30 days",
+  "internalChecksFilter": "strict",
+  "rangeStrategy": "pin",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 7am on the first day of the month"]
+  },
+  "packageRules": [
+    {
+      "description": "Small devDependency updates in one PR",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev dependencies (non-major)"
+    },
+    {
+      "description": "Playwright on its own: a new version needs a matching local browser (pnpm exec playwright install chromium)",
+      "matchPackageNames": ["@playwright/test", "playwright", "playwright-core"],
+      "groupName": "playwright"
+    },
+    {
+      "description": "GitHub Actions in one PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formFieldNames, getConfigFormSchema } from '../src/editor';
+import { normalizeConfig } from '../src/config';
+import { formFieldNames, getConfigFormSchema, type FormSchemaItem } from '../src/editor';
 import { localize, resolveLanguage, TRANSLATIONS } from '../src/i18n';
 
 const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
@@ -71,6 +72,16 @@ describe('i18n', () => {
 
 describe('getConfigFormSchema', () => {
   const form = getConfigFormSchema('en');
+
+  it('shows the same boolean defaults as the card uses', () => {
+    const flat = (items: FormSchemaItem[]): FormSchemaItem[] =>
+      items.flatMap((i) => (i.schema ? flat(i.schema) : [i]));
+    const items = flat(form.schema);
+    const normalized = normalizeConfig({ type: 'x', entity: 'sensor.a' });
+    for (const key of ['show_legend', 'show_labels'] as const) {
+      expect(items.find((i) => i.name === key)?.default).toBe(normalized[key]);
+    }
+  });
 
   it('writes only known config keys', () => {
     expect(formFieldNames(form.schema).sort()).toEqual(

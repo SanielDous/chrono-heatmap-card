@@ -10,6 +10,8 @@ export interface FormSchemaItem {
   selector?: Record<string, unknown>;
   schema?: FormSchemaItem[];
   flatten?: boolean;
+  /** Shown while the key is missing (HA passes it as the selector's placeholder; boolean selectors honour it). */
+  default?: unknown;
 }
 
 export interface ConfigForm {
@@ -80,8 +82,8 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
       name: '',
       type: 'grid',
       schema: [
-        { name: 'show_legend', selector: { boolean: {} } },
-        { name: 'show_labels', selector: { boolean: {} } },
+        { name: 'show_legend', selector: { boolean: {} }, default: true },
+        { name: 'show_labels', selector: { boolean: {} }, default: true },
       ],
     },
   ];

@@ -125,8 +125,7 @@ export class ChronoHeatmapCard extends HTMLElement {
       all[0] ??
       Object.keys(hass.states).find((e) => e.startsWith('sensor.')) ??
       'sun.sun';
-    // HA's form shows a missing boolean as off; spell out the defaults so the editor matches the card
-    return { entity: pick, show_legend: true, show_labels: true };
+    return { entity: pick };
   }
 
   getGridOptions() {

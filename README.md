@@ -15,6 +15,12 @@ weeks, months).
 Works with numeric sensors (mean / min / max / sum / last / change) and on/off entities (share of time "on").
 Data comes from long-term statistics where possible and from the recorder history otherwise.
 
+<p>
+  <img src="docs/images/month-day-temperature.png" alt="Months × days temperature heatmap" width="480">
+  <img src="docs/images/day-hour-door-dark.png" alt="Days × hours share of time a door was open, dark theme, German" width="480">
+  <img src="docs/images/hour-5min-power.png" alt="Hours × 5 minutes power heatmap" width="480">
+</p>
+
 ## Installation
 
 ### HACS (custom repository)

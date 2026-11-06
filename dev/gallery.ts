@@ -95,13 +95,11 @@ export const GALLERY: GalleryItem[] = [
     },
   },
   {
-    id: 'week-hour-co2',
+    id: 'day-hour-co2',
     config: {
       entity: 'sensor.office_co2',
-      title: 'CO₂ · automatic scale',
-      row_unit: 'week',
-      column_unit: 'hour',
-      rows: 2,
+      title: 'Office CO₂ · automatic scale',
+      rows: 7,
     },
   },
   {

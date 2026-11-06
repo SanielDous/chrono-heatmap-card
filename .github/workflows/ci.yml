@@ -29,6 +29,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm build:demo
       - uses: actions/upload-artifact@v4
         with:
           name: chrono-heatmap-card

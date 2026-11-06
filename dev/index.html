@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chrono Heatmap – Dev</title>
+    <title>Chrono Heatmap Card – Demo</title>
     <style id="theme"></style>
     <style>
       body {
@@ -32,6 +32,16 @@
         display: flex;
         gap: 6px;
         align-items: center;
+      }
+      .repo-link {
+        margin-left: auto;
+        font-size: 13px;
+        color: var(--primary-color);
+      }
+      .intro {
+        margin: 0 0 16px;
+        font-size: 14px;
+        color: var(--secondary-text-color);
       }
       main {
         padding: 16px;
@@ -82,7 +92,7 @@
   </head>
   <body>
     <header>
-      <h1>Chrono Heatmap · Dev</h1>
+      <h1>Chrono Heatmap Card · Demo</h1>
       <label
         >Theme
         <select id="theme-select">
@@ -100,8 +110,13 @@
       <label>Now <input id="now-input" type="datetime-local" /></label>
       <label><input id="playground-toggle" type="checkbox" checked /> Playground</label>
       <span class="event-log" id="event-log"></span>
+      <a class="repo-link" href="https://github.com/SanielDous/ha-heatmap-card">GitHub</a>
     </header>
     <main>
+      <p class="intro">
+        Mock data, no Home Assistant needed. Hover or tap a cell for details, switch theme, language and the
+        current time above, and edit the YAML in the playground at the bottom to try your own configuration.
+      </p>
       <section class="gallery" id="gallery"></section>
       <section class="playground" id="playground">
         <div>

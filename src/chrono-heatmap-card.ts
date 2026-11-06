@@ -7,7 +7,7 @@ import {
   type CardConfig,
   type NormalizedConfig,
 } from './config';
-import { hasStatistics, isNumericEntity, loadBuckets, type ValueMode } from './data';
+import { hasStatistics, isNumericEntity, loadBuckets, type LoadResult, type ValueMode } from './data';
 import { getConfigFormSchema } from './editor';
 import { columnLabels, columnLabelWidth, formatPeriod, formatRowLabel, formatValue } from './format';
 import { buildGrid, resolveTimeZone, resolveWeekStart, type Grid } from './grid';
@@ -21,6 +21,8 @@ const VERSION = typeof __CARD_VERSION__ === 'string' ? __CARD_VERSION__ : 'dev';
 
 const RELOAD_THROTTLE_MS = 60_000;
 const REFRESH_INTERVAL_MS = 5 * 60_000;
+/** Config changes (e.g. typing in the card editor) are loaded after this quiet time. */
+const CONFIG_DEBOUNCE_MS = 300;
 
 /** Escape text for use in HTML/SVG content and attribute values. */
 const esc = (s: string | number): string =>
@@ -68,6 +70,11 @@ export class ChronoHeatmapCard extends HTMLElement {
   private _resizeObserver?: ResizeObserver;
   private _timer?: ReturnType<typeof setInterval>;
   private _pending?: ReturnType<typeof setTimeout>;
+  private _configTimer?: ReturnType<typeof setTimeout>;
+  /** A throttled reload was cancelled by a disconnect and is still owed. */
+  private _dirty = false;
+  /** Previous load, reused for incremental statistics loads. */
+  private _lastResult?: LoadResult;
   private _pointerType = 'mouse';
   private _renderQueued = false;
 
@@ -131,16 +138,31 @@ export class ChronoHeatmapCard extends HTMLElement {
   }
 
   setConfig(config: CardConfig): void {
+    let normalized: NormalizedConfig;
     try {
-      this._config = normalizeConfig(config);
+      normalized = normalizeConfig(config);
     } catch (e) {
       if (e instanceof ConfigError) throw new Error(localize(this._lang, e.key, e.params));
       throw e;
     }
+    if (this._config && JSON.stringify(normalized) === JSON.stringify(this._config)) return;
+    const reconfigure = this._config !== undefined;
+    this._config = normalized;
     this._values = undefined;
     this._error = undefined;
     this._tooltip = undefined;
-    this._scheduleLoad(true);
+    this._lastResult = undefined;
+    if (this._configTimer) clearTimeout(this._configTimer);
+    this._configTimer = undefined;
+    if (reconfigure && this._hass) {
+      // editor: wait until typing pauses instead of querying the recorder on every keystroke
+      this._configTimer = setTimeout(() => {
+        this._configTimer = undefined;
+        this._scheduleLoad(true);
+      }, CONFIG_DEBOUNCE_MS);
+    } else {
+      this._scheduleLoad(true);
+    }
     this._queueRender();
   }
 
@@ -152,6 +174,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const changed = entity !== this._lastEntity;
     this._lastEntity = entity;
     if (first || localeChanged) {
+      this._lastResult = undefined;
       this._scheduleLoad(true);
       this._queueRender();
     } else if (changed) {
@@ -179,7 +202,11 @@ export class ChronoHeatmapCard extends HTMLElement {
       this._resizeObserver.observe(this._body);
     }
     // back on screen after a while (e.g. view switch): data may be stale
-    if (this._hass && this._config && (!this._values || Date.now() - this._lastLoad > RELOAD_THROTTLE_MS)) {
+    if (
+      this._hass &&
+      this._config &&
+      (!this._values || this._dirty || Date.now() - this._lastLoad > RELOAD_THROTTLE_MS)
+    ) {
       this._scheduleLoad(true);
     }
     this._queueRender();
@@ -188,8 +215,16 @@ export class ChronoHeatmapCard extends HTMLElement {
   disconnectedCallback(): void {
     if (this._timer) clearInterval(this._timer);
     this._timer = undefined;
-    if (this._pending) clearTimeout(this._pending);
+    if (this._pending) {
+      clearTimeout(this._pending);
+      this._dirty = true;
+    }
     this._pending = undefined;
+    if (this._configTimer) {
+      clearTimeout(this._configTimer);
+      this._dirty = true;
+    }
+    this._configTimer = undefined;
     this._resizeObserver?.disconnect();
     this._resizeObserver = undefined;
   }
@@ -218,6 +253,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     }
     if (this._pending) clearTimeout(this._pending);
     this._pending = undefined;
+    this._dirty = false;
     this._lastLoad = Date.now();
     void this._load();
   }
@@ -256,14 +292,18 @@ export class ChronoHeatmapCard extends HTMLElement {
           statsAvailable = false; // not cached: retried on the next load
         }
       }
-      const { buckets } = await loadBuckets(hass, {
+      const result = await loadBuckets(hass, {
         config,
         grid,
         now,
         mode,
         statisticsAvailable: statsAvailable ?? false,
+        stateClass: entity.attributes.state_class,
+        previous: this._lastResult,
       });
       if (seq !== this._loadSeq) return;
+      this._lastResult = result;
+      const { buckets } = result;
       const values = aggregateCells(grid, buckets, agg);
       this._grid = grid;
       this._agg = agg;
@@ -467,7 +507,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const lang = this._lang;
     const v = this._values[t.row]?.[t.col] ?? null;
     const value = v === null ? localize(lang, 'ui.no_data') : formatValue(v, this._agg, this._unit, lang);
-    this._tooltipEl.innerHTML = `<div class="tt-period">${esc(formatPeriod(cell, grid.columnUnit, lang, grid.timeZone))}</div><div class="tt-value">${esc(value)}</div>`;
+    this._tooltipEl.innerHTML = `<div class="tt-period">${esc(formatPeriod(cell, grid.columnUnit, lang, grid.timeZone, grid.weekStartsOn))}</div><div class="tt-value">${esc(value)}</div>`;
     const b = this._body.getBoundingClientRect();
     const c = rect.getBoundingClientRect();
     const half = 80;

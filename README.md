@@ -84,6 +84,13 @@ Notes:
 - In time zones with a :30/:45 offset the card always uses history, because statistics are aligned to whole UTC hours.
 - Raw history and 5-minute statistics are kept only as long as the recorder keeps them (default 10 days);
   hourly statistics are kept forever. `minute` columns and on/off entities always use history.
+- Gaps in the statistics (e.g. HA was down, or the sensor got a `state_class` recently) are filled from history
+  while the recorder still has it.
+- `change` follows HA: for `total_increasing` meters a drop of more than 10 % is a meter reset, smaller drops count
+  as negative change; `total` meters (e.g. net import/export) may go down.
+- `sum` adds up the per-period means (e.g. hourly averages of a power sensor); for meters use `change`.
+- `year` × `week` columns are labelled with calendar weeks (ISO weeks when the week starts on Monday) of the
+  current year; a week belongs to the year it starts in.
 - Interaction: hover (mouse) or tap (touch) shows a tooltip; click (mouse) or a second tap opens more-info.
 
 ## Development

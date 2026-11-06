@@ -1,4 +1,4 @@
-import { bucketsFromHistory, bucketsFromStatistics, mergeBuckets } from './buckets';
+import { bucketsFromHistory, bucketsFromStatistics, meterModeFor, mergeBuckets } from './buckets';
 import type { BaseBucket, HistPoint, StatRow } from './buckets';
 import { defaultOnStates, type ColumnUnit, type NormalizedConfig } from './config';
 import type { Grid } from './grid';
@@ -142,11 +142,22 @@ export interface LoadOptions {
   now: number;
   mode: ValueMode;
   statisticsAvailable: boolean;
+  /** `state_class` of the entity; decides how drops count for `change`. */
+  stateClass?: string;
+  /** Result of the previous load; when compatible, only data after its `covered` time is fetched again. */
+  previous?: LoadResult;
 }
 
 export interface LoadResult {
   buckets: BaseBucket[];
   source: 'statistics' | 'history';
+  /** Statistics source only: final buckets (statistics + history for gaps between them) from `start` … */
+  stable?: BaseBucket[];
+  start?: number;
+  /** … up to this time (end of the last compiled statistic). */
+  covered?: number;
+  /** Identifies what `stable` was computed for. */
+  key?: string;
 }
 
 export function chooseSource(
@@ -161,31 +172,79 @@ export function chooseSource(
   return statisticsAvailable ? 'statistics' : 'history';
 }
 
-/** Load base buckets for the visible grid. History fills the time after the last compiled statistic. */
+/** Most gap ranges fetched from history per load (the most recent ones). */
+export const MAX_GAP_FETCHES = 12;
+
+/** Stretches in [from, covered) of at least `minLength` that statistics do not cover, oldest first. */
+export function statisticsGaps(
+  stat: BaseBucket[],
+  from: number,
+  covered: number,
+  minLength: number,
+): [number, number][] {
+  const gaps: [number, number][] = [];
+  let t = from;
+  for (const b of stat) {
+    if (b.start - t >= minLength) gaps.push([t, Math.min(b.start, covered)]);
+    t = Math.max(t, b.end);
+  }
+  return gaps;
+}
+
+/**
+ * Load base buckets for the visible grid.
+ * Statistics source: compiled statistics, with history filling gaps between them (e.g. HA was down, or the
+ * entity got a state_class recently) and the time after the last compiled statistic.
+ * With a compatible `previous` result, only statistics after its `covered` time are fetched again.
+ */
 export async function loadBuckets(hass: HomeAssistant, opts: LoadOptions): Promise<LoadResult> {
-  const { config, grid, now, mode } = opts;
+  const { config, grid, now, mode, previous } = opts;
   const onStates = config.on_states ?? defaultOnStates(config.entity);
   const size = baseBucketSize(config.column_unit);
+  const meterMode = meterModeFor(opts.stateClass);
   const to = Math.min(grid.end, now);
   const source = chooseSource(opts);
+  const history = async (from: number, until: number): Promise<BaseBucket[]> =>
+    bucketsFromHistory(
+      await fetchHistory(hass, config.entity, from, Math.min(until, to)),
+      from,
+      until,
+      size,
+      mode,
+      onStates,
+      now,
+      meterMode,
+    );
 
-  if (source === 'history') {
-    const points = await fetchHistory(hass, config.entity, grid.start, to);
-    return {
-      source,
-      buckets: bucketsFromHistory(points, grid.start, grid.end, size, mode, onStates, now),
-    };
-  }
+  if (source === 'history') return { source, buckets: await history(grid.start, grid.end) };
 
   const period = config.column_unit === '5minute' ? '5minute' : 'hour';
-  const stat = bucketsFromStatistics(
-    await fetchStatistics(hass, config.entity, grid.start, grid.end, period),
-  );
-  const covered = stat.length ? stat[stat.length - 1].end : grid.start;
-  let hist: BaseBucket[] = [];
-  if (covered < to) {
-    const points = await fetchHistory(hass, config.entity, covered, to);
-    hist = bucketsFromHistory(points, covered, grid.end, size, mode, onStates, now);
-  }
-  return { source, buckets: mergeBuckets(stat, hist) };
+  const key = [config.entity, period, mode, meterMode].join('|');
+  const reuse =
+    previous?.key === key &&
+    previous.stable !== undefined &&
+    previous.covered !== undefined &&
+    previous.start !== undefined &&
+    previous.start <= grid.start &&
+    previous.covered >= grid.start &&
+    previous.covered <= to;
+  const from = reuse ? previous.covered! : grid.start;
+  const kept = reuse ? previous.stable!.filter((b) => b.end > grid.start) : [];
+
+  const stat = bucketsFromStatistics(await fetchStatistics(hass, config.entity, from, grid.end, period));
+  const covered = stat.length ? stat[stat.length - 1].end : from;
+  const gaps = statisticsGaps(stat, from, covered, size).slice(-MAX_GAP_FETCHES);
+  const [tail, ...filled] = await Promise.all([
+    covered < to ? history(covered, grid.end) : Promise.resolve([]),
+    ...gaps.map(([a, b]) => history(a, b)),
+  ]);
+  const stable = [...kept, ...mergeBuckets(stat, filled.flat())];
+  return {
+    source,
+    buckets: [...stable, ...tail],
+    stable,
+    start: reuse ? previous.start : grid.start,
+    covered,
+    key,
+  };
 }

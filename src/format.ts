@@ -1,5 +1,6 @@
+import { getISOWeek, getWeek } from 'date-fns';
 import type { Aggregation, ColumnUnit, RowUnit } from './config';
-import type { Cell, Grid, GridRow } from './grid';
+import type { Cell, Grid, GridRow, WeekDay } from './grid';
 import { localize } from './i18n';
 
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
@@ -11,6 +12,19 @@ function dtf(lang: string, timeZone: string, opts: Intl.DateTimeFormatOptions): 
     fmtCache.set(key, f);
   }
   return f;
+}
+
+/**
+ * Calendar week number of the week starting at `start` (local date in `tz`): ISO 8601 weeks for Monday
+ * starts, otherwise the convention where week 1 contains January 1st (US and others).
+ */
+export function weekNumber(start: number, tz: string, weekStartsOn: WeekDay): number {
+  const [y, m, d] = dtf('en-CA', tz, { year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(start)
+    .split('-')
+    .map(Number);
+  const local = new Date(y, m - 1, d, 12);
+  return weekStartsOn === 1 ? getISOWeek(local) : getWeek(local, { weekStartsOn, firstWeekContainsDate: 1 });
 }
 
 /** `compact` is used where labels sit side by side (vertical orientation). */
@@ -65,7 +79,10 @@ export function columnLabels(grid: Grid, lang: string, minSpacing: number): stri
   const ref = referenceRow(grid);
   const tz = grid.timeZone;
   const step = Math.max(1, Math.ceil(minSpacing));
-  return ref.cells.map((cell, i) => {
+  return ref.cells.map((refCell, i) => {
+    // week numbers differ from year to year: label with the most recent row that has this column
+    const cell =
+      grid.columnUnit === 'week' ? (grid.rows.findLast((r) => r.cells[i])?.cells[i] ?? refCell) : refCell;
     if (!cell) return '';
     if (grid.rowUnit === 'week' && grid.columnUnit === 'hour') {
       // label day starts only
@@ -73,28 +90,24 @@ export function columnLabels(grid: Grid, lang: string, minSpacing: number): stri
       return hour === 0 ? dtf(lang, tz, { weekday: 'short' }).format(cell.start) : '';
     }
     if (i % step !== 0) return '';
-    return formatColumn(cell, grid.columnUnit, grid.rowUnit, lang, tz, i);
+    return formatColumn(cell, grid, lang, i);
   });
 }
 
-function formatColumn(
-  cell: Cell,
-  unit: ColumnUnit,
-  _row: RowUnit,
-  lang: string,
-  tz: string,
-  index: number,
-): string {
-  switch (unit) {
+function formatColumn(cell: Cell, grid: Grid, lang: string, index: number): string {
+  const tz = grid.timeZone;
+  switch (grid.columnUnit) {
     case 'minute':
     case '5minute':
       return `:${dtf('en-GB', tz, { minute: '2-digit' }).format(cell.start).padStart(2, '0')}`;
     case 'hour':
       return dtf('en-GB', tz, { hour: '2-digit', hourCycle: 'h23' }).format(cell.start);
     case 'day':
-      return _row === 'week' ? dtf(lang, tz, { weekday: 'short' }).format(cell.start) : String(index + 1);
+      return grid.rowUnit === 'week'
+        ? dtf(lang, tz, { weekday: 'short' }).format(cell.start)
+        : String(index + 1);
     case 'week':
-      return localize(lang, 'ui.week_short', { n: index + 1 });
+      return localize(lang, 'ui.week_short', { n: weekNumber(cell.start, tz, grid.weekStartsOn) });
     case 'month':
       return dtf(lang, tz, { month: 'short' }).format(cell.start);
   }
@@ -107,7 +120,13 @@ export function columnLabelWidth(unit: ColumnUnit, rowUnit: RowUnit): number {
   return 22;
 }
 
-export function formatPeriod(cell: Cell, unit: ColumnUnit, lang: string, tz: string): string {
+export function formatPeriod(
+  cell: Cell,
+  unit: ColumnUnit,
+  lang: string,
+  tz: string,
+  weekStartsOn: WeekDay = 1,
+): string {
   switch (unit) {
     case 'minute':
     case '5minute':
@@ -129,7 +148,8 @@ export function formatPeriod(cell: Cell, unit: ColumnUnit, lang: string, tz: str
       );
     case 'week': {
       const f = dtf(lang, tz, { day: 'numeric', month: 'short', year: 'numeric' });
-      return `${f.format(cell.start)} – ${f.format(cell.end - 1)}`;
+      const week = localize(lang, 'ui.week_short', { n: weekNumber(cell.start, tz, weekStartsOn) });
+      return `${week} · ${f.format(cell.start)} – ${f.format(cell.end - 1)}`;
     }
     case 'month':
       return dtf(lang, tz, { month: 'long', year: 'numeric' }).format(cell.start);

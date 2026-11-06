@@ -100,7 +100,9 @@ test('hover shows a tooltip', async ({ page }) => {
 test('clicking the header opens more-info', async ({ page }) => {
   await openDashboard(page);
   await card(page, 'Temperature by hour').locator('.header').click();
-  await expect(page.getByRole('dialog').getByText('Outdoor temperature').first()).toBeVisible();
+  // HA dialogs slot their content into the role=dialog element, so search from the dialog's host element
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('ha-more-info-dialog').getByText('Outdoor temperature').first()).toBeVisible();
   await page.screenshot({ path: `${OUT}/more-info.png` });
 });
 
@@ -114,9 +116,13 @@ test('card picker offers the card and its visual editor works', async ({ page })
   if (!(await addCard.isVisible())) await editDashboard.click();
   await addCard.click();
 
-  const picker = page.getByRole('dialog');
-  await picker.getByRole('textbox').first().fill('Chrono Heatmap');
-  const entry = picker.getByText('Chrono Heatmap', { exact: true }).first();
+  await page.getByRole('tab', { name: 'By card' }).click();
+  await page
+    .getByPlaceholder(/search cards/i)
+    .or(page.getByRole('textbox', { name: /search cards/i }))
+    .first()
+    .fill('Chrono Heatmap');
+  const entry = page.getByText('Chrono Heatmap', { exact: true }).first();
   await expect(entry).toBeVisible();
   await page.screenshot({ path: `${OUT}/card-picker.png` });
   await entry.click();

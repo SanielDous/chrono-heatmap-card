@@ -134,7 +134,7 @@ instance: copy `dist/chrono-heatmap-card.js` to `config/www/`.
 
 The CI job _Home Assistant E2E_ runs on every pull request. It starts the official Home Assistant container
 (version pinned in `e2e-ha/compose.yaml`, updated by Renovate) with the minimal `e2e-ha/config/`, then
-`e2e-ha/setup.ts` (plain Node, no extra dependencies):
+`e2e-ha/setup.ts` (plain Node ≥ 22.18 for type stripping and the global `WebSocket`, no extra dependencies):
 
 - completes onboarding through the REST API (user, time zone Europe/Berlin, analytics, integration step),
 - imports 40 days of hourly long-term statistics (`recorder/import_statistics`) for a template temperature sensor

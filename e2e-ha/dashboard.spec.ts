@@ -71,7 +71,7 @@ test('all cards render a grid with data', async ({ page }) => {
   // statistics-backed cards are well filled (14 days × 24 hours, 5 weeks × 7 days)
   expect(
     await card(page, 'Temperature by hour').locator('rect.cell:not(.empty):not(.future)').count(),
-  ).toBeGreaterThan(13 * 24);
+  ).toBeGreaterThanOrEqual(13 * 24 - 1); // 13 full days, one may be the 23-hour DST day
   expect(
     await card(page, 'Energy per day').locator('rect.cell:not(.empty):not(.future)').count(),
   ).toBeGreaterThan(4 * 7);

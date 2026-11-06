@@ -11,7 +11,9 @@ export default defineConfig({
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 30_000 },
+  // a retry may absorb a hiccup, but a test that only passes on retry still fails the job
   retries: process.env.CI ? 1 : 0,
+  failOnFlakyTests: !!process.env.CI,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never', outputFolder: 'e2e-ha-run/report' }]]
     : 'list',

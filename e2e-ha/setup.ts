@@ -328,6 +328,8 @@ async function createHistory(ws: Socket): Promise<void> {
 }
 
 async function installCard(ws: Socket): Promise<void> {
+  // e2e-ha/config/www/.gitkeep must stay: HA only serves /local when www exists at startup, so this
+  // mkdir is a no-op safety net, not a replacement
   mkdirSync(join(RUN_DIR, 'config', 'www'), { recursive: true });
   copyFileSync(
     join(ROOT, 'dist', 'chrono-heatmap-card.js'),

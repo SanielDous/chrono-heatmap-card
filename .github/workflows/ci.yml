@@ -81,7 +81,7 @@ jobs:
             playwright-report/
           retention-days: 14
       - name: Comment on PR
-        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != ''
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != '' }}
         uses: actions/github-script@v8
         env:
           ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
@@ -159,7 +159,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
       - name: Comment on PR
-        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != ''
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != '' }}
         uses: actions/github-script@v8
         env:
           ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}

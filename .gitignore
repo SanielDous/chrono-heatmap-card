@@ -5,6 +5,7 @@ coverage/
 test-results/
 playwright-report/
 screenshots/
+e2e-ha-run/
 *.log
 .DS_Store
 .claude/

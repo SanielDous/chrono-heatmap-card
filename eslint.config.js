@@ -12,6 +12,7 @@ export default tseslint.config(
       'test-results/',
       'playwright-report/',
       'screenshots/',
+      'e2e-ha-run/',
     ],
   },
   js.configs.recommended,

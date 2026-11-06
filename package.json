@@ -21,7 +21,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "screenshots": "playwright test"
+    "screenshots": "playwright test",
+    "e2e:ha:setup": "node e2e-ha/setup.ts",
+    "e2e:ha": "playwright test -c playwright.ha.config.ts"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",

@@ -32,6 +32,11 @@
       "description": "GitHub Actions in one PR",
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Test against new Home Assistant releases soon after they ship (HA releases monthly with weekly patches)",
+      "matchPackageNames": ["ghcr.io/home-assistant/home-assistant"],
+      "minimumReleaseAge": "3 days"
     }
   ]
 }

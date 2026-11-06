@@ -4,4 +4,5 @@ pnpm-lock.yaml
 screenshots/
 test-results/
 playwright-report/
+e2e-ha-run/
 .claude/

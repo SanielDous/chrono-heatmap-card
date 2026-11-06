@@ -1,0 +1,12 @@
+# Home Assistant for the end-to-end test (CI job "Home Assistant E2E", see README).
+# Renovate keeps the image tag up to date.
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.11.0
+    ports:
+      - '8123:8123'
+    volumes:
+      # copy of e2e-ha/config (HA writes its database and .storage there)
+      - ../e2e-ha-run/config:/config
+    environment:
+      TZ: Europe/Berlin

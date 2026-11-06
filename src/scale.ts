@@ -1,9 +1,11 @@
-import type { NormalizedScale, PresetName, ScaleStep, ScaleType } from './config';
+import type { Aggregation, NormalizedScale, PresetName, ScaleStep, ScaleType } from './config';
 
 interface Preset {
   type: ScaleType;
-  /** absolute presets: values in °C; relative presets: positions 0..1 */
+  /** absolute presets: values in `units[0]`; relative presets: positions 0..1 */
   steps: ScaleStep[];
+  /** Units the absolute values are meant for; with another unit the preset is used as a relative scale. */
+  units?: string[];
 }
 
 const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
@@ -11,6 +13,7 @@ const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
 export const PRESETS: Record<PresetName, Preset> = {
   temperature: {
     type: 'absolute',
+    units: ['°C', '°F'],
     steps: [
       { value: -10, color: '#313695' },
       { value: 0, color: '#4575b4' },
@@ -22,6 +25,55 @@ export const PRESETS: Record<PresetName, Preset> = {
       { value: 28, color: '#fdae61' },
       { value: 31, color: '#f46d43' },
       { value: 35, color: '#a50026' },
+    ],
+  },
+  // Relative humidity: dry (brown), comfortable 40–60 % (green), humid (blue).
+  humidity: {
+    type: 'absolute',
+    units: ['%'],
+    steps: [
+      { value: 20, color: '#b35806' },
+      { value: 30, color: '#f1a340' },
+      { value: 40, color: '#91cf60' },
+      { value: 50, color: '#1a9850' },
+      { value: 60, color: '#91cf60' },
+      { value: 70, color: '#67a9cf' },
+      { value: 85, color: '#2166ac' },
+    ],
+  },
+  // Indoor CO2: outdoor air is about 400 ppm, ventilate above about 1000 ppm, poor above 1400 ppm.
+  co2: {
+    type: 'absolute',
+    units: ['ppm'],
+    steps: [
+      { value: 400, color: '#1a9850' },
+      { value: 800, color: '#91cf60' },
+      { value: 1000, color: '#fee08b' },
+      { value: 1400, color: '#fc8d59' },
+      { value: 2000, color: '#d73027' },
+      { value: 3000, color: '#7f0000' },
+    ],
+  },
+  // PM2.5 bands of the European Air Quality Index (good 0–5, fair –15, moderate –50, poor –90, very poor –140).
+  pm25: {
+    type: 'absolute',
+    units: ['μg/m³', 'µg/m³'], // HA uses U+03BC; U+00B5 for hand-made sensors
+    steps: [
+      { value: 0, color: '#1a9850' },
+      { value: 5, color: '#66bd63' },
+      { value: 15, color: '#fee08b' },
+      { value: 50, color: '#fc8d59' },
+      { value: 90, color: '#d73027' },
+      { value: 140, color: '#7b3294' },
+    ],
+  },
+  // Green (low), yellow, red (high); `reverse: true` for "high is good" (e.g. battery).
+  traffic: {
+    type: 'relative',
+    steps: [
+      { value: 0, color: '#1a9850' },
+      { value: 0.5, color: '#fee08b' },
+      { value: 1, color: '#d73027' },
     ],
   },
   viridis: {
@@ -57,13 +109,52 @@ export interface ScaleContext {
   values: number[];
   /** Aggregation is on_ratio → fixed 0..1 range. */
   isRatio: boolean;
+  /** Aggregation shown; level presets (temperature, CO2, …) are only chosen for level aggregations. */
+  aggregation?: Aggregation;
+}
+
+/** Aggregations whose values are levels of the entity (not sums or changes). */
+const LEVEL_AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'last'];
+
+export interface AutoChoice {
+  preset: PresetName;
+  reverse?: boolean;
+  min?: number;
+  max?: number;
+}
+
+/** Preset chosen from the entity's device class when the config names none. */
+export function autoPreset(ctx: ScaleContext): AutoChoice {
+  if (ctx.isRatio || (ctx.aggregation !== undefined && !LEVEL_AGGREGATIONS.includes(ctx.aggregation))) {
+    return { preset: 'viridis' };
+  }
+  switch (ctx.deviceClass) {
+    case 'temperature':
+      return { preset: 'temperature' };
+    case 'humidity':
+      return { preset: 'humidity' };
+    case 'carbon_dioxide':
+      return { preset: 'co2' };
+    case 'pm25':
+      return { preset: 'pm25' };
+    case 'battery':
+      return ctx.unit === '%'
+        ? { preset: 'traffic', reverse: true, min: 0, max: 100 }
+        : { preset: 'traffic', reverse: true };
+    default:
+      return { preset: 'viridis' };
+  }
 }
 
 const cToF = (c: number): number => (c * 9) / 5 + 32;
 
-function relativeRange(cfg: NormalizedScale, ctx: ScaleContext): [number, number] {
-  let lo = cfg.min ?? (ctx.isRatio ? 0 : undefined);
-  let hi = cfg.max ?? (ctx.isRatio ? 1 : undefined);
+function relativeRange(
+  min: number | undefined,
+  max: number | undefined,
+  ctx: ScaleContext,
+): [number, number] {
+  let lo = min ?? (ctx.isRatio ? 0 : undefined);
+  let hi = max ?? (ctx.isRatio ? 1 : undefined);
   if (lo === undefined || hi === undefined) {
     let dmin = Infinity;
     let dmax = -Infinity;
@@ -92,23 +183,38 @@ function toPositions(steps: ScaleStep[]): ScaleStep[] {
   return steps.map((s) => ({ value: (s.value - first) / span, color: s.color }));
 }
 
+/** Flip the colors, keeping the stop values (thresholds stay where they are). */
+function reversed(stops: ScaleStep[]): ScaleStep[] {
+  return stops.map((s, i) => ({ value: s.value, color: stops[stops.length - 1 - i].color }));
+}
+
 export function resolveScale(cfg: NormalizedScale, ctx: ScaleContext): ResolvedScale {
   let stops: ScaleStep[];
+  let reverse = cfg.reverse ?? false;
   if (cfg.steps) {
-    stops = (cfg.type ?? 'absolute') === 'absolute' ? cfg.steps : spread(cfg.steps, relativeRange(cfg, ctx));
+    stops =
+      (cfg.type ?? 'absolute') === 'absolute'
+        ? cfg.steps
+        : spread(cfg.steps, relativeRange(cfg.min, cfg.max, ctx));
   } else {
-    const name: PresetName =
-      cfg.preset ?? (ctx.deviceClass === 'temperature' && !ctx.isRatio ? 'temperature' : 'viridis');
+    const auto = cfg.preset ? undefined : autoPreset(ctx);
+    const name: PresetName = cfg.preset ?? auto!.preset;
+    // `reverse` flips whatever the scale would show, so false (the editor's unchecked box) is always the default
+    reverse = (auto?.reverse ?? false) !== reverse;
     const preset = PRESETS[name];
-    const type = cfg.type ?? preset.type;
+    // automatic presets fall back to relative for an unexpected unit; an explicitly chosen preset is used as is
+    const unitFits = !auto || !ctx.unit || !preset.units || preset.units.includes(ctx.unit);
+    // relative presets have positions, not values: they can only be spread over a range
+    const type = preset.type === 'relative' ? 'relative' : (cfg.type ?? (unitFits ? 'absolute' : 'relative'));
     if (type === 'absolute') {
       const fahrenheit = name === 'temperature' && ctx.unit === '°F';
       stops = preset.steps.map((s) => ({ value: fahrenheit ? cToF(s.value) : s.value, color: s.color }));
     } else {
       const positions = preset.type === 'relative' ? preset.steps : toPositions(preset.steps);
-      stops = spread(positions, relativeRange(cfg, ctx));
+      stops = spread(positions, relativeRange(cfg.min ?? auto?.min, cfg.max ?? auto?.max, ctx));
     }
   }
+  if (reverse) stops = reversed(stops);
   return { stops, min: stops[0].value, max: stops[stops.length - 1].value };
 }
 

@@ -7,3 +7,4 @@ playwright-report/
 screenshots/
 *.log
 .DS_Store
+.claude/

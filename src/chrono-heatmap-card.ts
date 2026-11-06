@@ -313,6 +313,7 @@ export class ChronoHeatmapCard extends HTMLElement {
         deviceClass: entity.attributes.device_class,
         values: values.flat().filter((v): v is number => v !== null),
         isRatio: agg === 'on_ratio',
+        aggregation: agg,
       });
       this._error = undefined;
       this._values = values;

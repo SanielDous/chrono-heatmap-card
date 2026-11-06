@@ -105,6 +105,18 @@ describe('normalizeConfig', () => {
     expect(
       normalizeConfig({ ...base, scale: { preset: 'temperature', type: 'absolute' } }).scale.preset,
     ).toBe('temperature');
+    expect(normalizeConfig({ ...base, scale: { preset: 'co2', type: 'absolute' } }).scale.preset).toBe('co2');
+    expect(errorKey(() => normalizeConfig({ ...base, scale: { preset: 'traffic', type: 'absolute' } }))).toBe(
+      'error.absolute_needs_steps',
+    );
+  });
+
+  it('validates scale.reverse', () => {
+    expect(normalizeConfig({ ...base, scale: { reverse: true } }).scale.reverse).toBe(true);
+    expect(normalizeConfig({ ...base, scale: { reverse: false } }).scale.reverse).toBeUndefined();
+    expect(errorKey(() => normalizeConfig({ ...base, scale: { reverse: 'yes' as never } }))).toBe(
+      'error.invalid_option',
+    );
   });
 
   it('rejects min >= max', () => {

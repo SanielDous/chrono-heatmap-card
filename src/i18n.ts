@@ -44,6 +44,7 @@ const en: Dict = {
   'editor.type': 'Scale type',
   'editor.min': 'Minimum',
   'editor.max': 'Maximum',
+  'editor.reverse': 'Reverse colors',
   'editor.show_legend': 'Show legend',
   'editor.show_labels': 'Show labels',
 
@@ -70,6 +71,10 @@ const en: Dict = {
   'option.temperature': 'Temperature',
   'option.viridis': 'Viridis',
   'option.mono': 'Single color',
+  'option.humidity': 'Humidity',
+  'option.co2': 'CO₂',
+  'option.pm25': 'Fine dust (PM2.5)',
+  'option.traffic': 'Traffic light',
   'option.absolute': 'Absolute',
   'option.relative': 'Relative',
 };
@@ -120,6 +125,7 @@ const de: Dict = {
   'editor.type': 'Skalentyp',
   'editor.min': 'Minimum',
   'editor.max': 'Maximum',
+  'editor.reverse': 'Farben umkehren',
   'editor.show_legend': 'Legende anzeigen',
   'editor.show_labels': 'Beschriftung anzeigen',
 
@@ -146,6 +152,10 @@ const de: Dict = {
   'option.temperature': 'Temperatur',
   'option.viridis': 'Viridis',
   'option.mono': 'Einfarbig',
+  'option.humidity': 'Luftfeuchtigkeit',
+  'option.co2': 'CO₂',
+  'option.pm25': 'Feinstaub (PM2,5)',
+  'option.traffic': 'Ampel',
   'option.absolute': 'Absolut',
   'option.relative': 'Relativ',
 };

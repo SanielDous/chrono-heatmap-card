@@ -8,3 +8,4 @@ screenshots/
 e2e-ha-run/
 *.log
 .DS_Store
+.claude/

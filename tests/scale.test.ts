@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colorFor, legendGradient, PRESETS, resolveScale } from '../src/scale';
+import { autoPreset, colorFor, legendGradient, PRESETS, resolveScale } from '../src/scale';
 
 const ctx = { values: [] as number[], isRatio: false };
 
@@ -95,5 +95,77 @@ describe('legendGradient', () => {
       ctx,
     );
     expect(legendGradient(s)).toBe('linear-gradient(to right, red 0%, green 25%, blue 100%)');
+  });
+});
+
+describe('device class presets', () => {
+  it('picks a preset from the device class for level aggregations', () => {
+    expect(autoPreset({ ...ctx, deviceClass: 'carbon_dioxide', aggregation: 'mean' }).preset).toBe('co2');
+    expect(autoPreset({ ...ctx, deviceClass: 'humidity', aggregation: 'max' }).preset).toBe('humidity');
+    expect(autoPreset({ ...ctx, deviceClass: 'pm25' }).preset).toBe('pm25');
+    expect(autoPreset({ ...ctx, deviceClass: 'temperature', aggregation: 'last' }).preset).toBe(
+      'temperature',
+    );
+  });
+
+  it('does not use level presets for sums, changes or on ratios', () => {
+    expect(autoPreset({ ...ctx, deviceClass: 'carbon_dioxide', aggregation: 'sum' }).preset).toBe('viridis');
+    expect(autoPreset({ ...ctx, deviceClass: 'temperature', aggregation: 'change' }).preset).toBe('viridis');
+    expect(autoPreset({ ...ctx, deviceClass: 'humidity', isRatio: true }).preset).toBe('viridis');
+  });
+
+  it('uses absolute CO2 values in ppm', () => {
+    const s = resolveScale({}, { ...ctx, deviceClass: 'carbon_dioxide', unit: 'ppm', values: [450, 600] });
+    expect([s.min, s.max]).toEqual([400, 3000]);
+    expect(colorFor(s, 1000)).toBe('#fee08b');
+  });
+
+  it('falls back to a relative scale when the unit does not match the automatic preset', () => {
+    const s = resolveScale({}, { ...ctx, deviceClass: 'humidity', unit: 'g/m³', values: [5, 15] });
+    expect([s.min, s.max]).toEqual([5, 15]);
+    expect(s.stops).toHaveLength(PRESETS.humidity.steps.length);
+  });
+
+  it('keeps an explicitly chosen absolute preset absolute, whatever the unit', () => {
+    const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: 'C', values: [18, 24] });
+    expect([s.min, s.max]).toEqual([-10, 35]);
+  });
+
+  it('never uses relative preset positions as absolute values', () => {
+    const s = resolveScale({ type: 'absolute' }, { ...ctx, deviceClass: 'battery', unit: '%', values: [50] });
+    expect([s.min, s.max]).toEqual([0, 100]);
+  });
+
+  it('reverse keeps the thresholds of uneven presets', () => {
+    const s = resolveScale({ preset: 'co2', reverse: true }, { ...ctx, unit: 'ppm', values: [] });
+    expect(s.stops.map((x) => x.value)).toEqual(PRESETS.co2.steps.map((x) => x.value));
+    expect(colorFor(s, 1000)).toBe('#fc8d59'); // was yellow, now the mirrored neighbour color
+    expect(colorFor(s, 400)).toBe('#7f0000');
+  });
+
+  it('accepts both micro signs for PM2.5', () => {
+    for (const unit of ['µg/m³', 'μg/m³']) {
+      expect(resolveScale({}, { ...ctx, deviceClass: 'pm25', unit, values: [3] }).max).toBe(140);
+    }
+  });
+
+  it('shows battery levels as a reversed traffic light from 0 to 100 %', () => {
+    const s = resolveScale({}, { ...ctx, deviceClass: 'battery', unit: '%', values: [60, 90] });
+    expect([s.min, s.max]).toEqual([0, 100]);
+    expect(colorFor(s, 100)).toBe('#1a9850'); // full = green
+    expect(colorFor(s, 0)).toBe('#d73027'); // empty = red
+  });
+
+  it('reverse flips the colors over the same range', () => {
+    const s = resolveScale({ preset: 'traffic', reverse: true }, { ...ctx, values: [10, 30] });
+    expect([s.min, s.max]).toEqual([10, 30]);
+    expect(colorFor(s, 10)).toBe('#d73027');
+    expect(colorFor(s, 30)).toBe('#1a9850');
+  });
+
+  it('reverse flips the automatic battery scale; false keeps the default', () => {
+    const battery = { ...ctx, deviceClass: 'battery', unit: '%', values: [50] };
+    expect(colorFor(resolveScale({ reverse: true }, battery), 100)).toBe('#d73027');
+    expect(colorFor(resolveScale({ reverse: undefined }, battery), 100)).toBe('#1a9850');
   });
 });

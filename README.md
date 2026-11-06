@@ -15,6 +15,9 @@ weeks, months).
 Works with numeric sensors (mean / min / max / sum / last / change) and on/off entities (share of time "on").
 Data comes from long-term statistics where possible and from the recorder history otherwise.
 
+The card and its visual editor are available in English, German, French, Dutch, Spanish, Italian, Polish and
+Swedish; the language follows your HA profile, other languages fall back to English.
+
 **[▶ Try the interactive demo](https://sanieldous.github.io/chrono-heatmap-card/)** with mock data, no installation needed.
 
 <p>
@@ -46,23 +49,24 @@ entity: sensor.outdoor_temperature
 
 All options (also available in the visual editor, except `scale.steps`):
 
-| Option            | Default                                        | Description                                                                                                                      |
-| ----------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `entity`          | –                                              | Entity to show (required)                                                                                                        |
-| `title`           | entity name                                    | Card title; click opens the more-info dialog                                                                                     |
-| `row_unit`        | `day`                                          | `hour` · `day` · `week` · `month` · `year`                                                                                       |
-| `column_unit`     | depends on `row_unit`                          | see table above                                                                                                                  |
-| `rows`            | hour 12, day 14, week 8, month 6, year 2       | Number of rows; the last row is the current period                                                                               |
-| `orientation`     | `horizontal`                                   | `vertical` swaps rows and columns                                                                                                |
-| `source`          | `auto`                                         | `auto` · `statistics` · `history`                                                                                                |
-| `aggregation`     | auto                                           | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
-| `on_states`       | by domain                                      | States counted as "on" for `on_ratio` (default `on`; person/device_tracker `home`, cover `open`, media_player `playing`, …)      |
-| `scale.preset`    | `temperature` for temperatures, else `viridis` | `temperature` · `viridis` · `mono`                                                                                               |
-| `scale.type`      | from preset                                    | `absolute`: step values in entity units · `relative`: step positions 0–1 spread over min..max                                    |
-| `scale.min`/`max` | from data                                      | Fixed range for relative scales                                                                                                  |
-| `scale.steps`     | –                                              | Custom color steps (`value`, `color`) – YAML only                                                                                |
-| `show_legend`     | `true`                                         |                                                                                                                                  |
-| `show_labels`     | `true`                                         |                                                                                                                                  |
+| Option            | Default                                                                                                | Description                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `entity`          | –                                                                                                      | Entity to show (required)                                                                                                        |
+| `title`           | entity name                                                                                            | Card title; click opens the more-info dialog                                                                                     |
+| `row_unit`        | `day`                                                                                                  | `hour` · `day` · `week` · `month` · `year`                                                                                       |
+| `column_unit`     | depends on `row_unit`                                                                                  | see table above                                                                                                                  |
+| `rows`            | hour 12, day 14, week 8, month 6, year 2                                                               | Number of rows; the last row is the current period                                                                               |
+| `orientation`     | `horizontal`                                                                                           | `vertical` swaps rows and columns                                                                                                |
+| `source`          | `auto`                                                                                                 | `auto` · `statistics` · `history`                                                                                                |
+| `aggregation`     | auto                                                                                                   | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
+| `on_states`       | by domain                                                                                              | States counted as "on" for `on_ratio` (default `on`; person/device_tracker `home`, cover `open`, media_player `playing`, …)      |
+| `scale.preset`    | from device class: temperature, humidity, CO₂, PM2.5, battery (reversed traffic light); else `viridis` | `temperature` · `humidity` · `co2` · `pm25` · `traffic` · `viridis` · `mono`                                                     |
+| `scale.reverse`   | `false`                                                                                                | `true` flips the colors of the scale (e.g. `traffic` for "high is good")                                                         |
+| `scale.type`      | from preset                                                                                            | `absolute`: step values in entity units · `relative`: step positions 0–1 spread over min..max                                    |
+| `scale.min`/`max` | from data                                                                                              | Fixed range for relative scales                                                                                                  |
+| `scale.steps`     | –                                                                                                      | Custom color steps (`value`, `color`) – YAML only                                                                                |
+| `show_legend`     | `true`                                                                                                 |                                                                                                                                  |
+| `show_labels`     | `true`                                                                                                 |                                                                                                                                  |
 
 Example with custom steps:
 
@@ -88,6 +92,11 @@ Notes:
   while the recorder still has it.
 - `change` follows HA: for `total_increasing` meters a drop of more than 10 % is a meter reset, smaller drops count
   as negative change; `total` meters (e.g. net import/export) may go down.
+- Automatic color scales by device class (only for mean/min/max/last): `temperature` (°C/°F), `humidity` (%,
+  green at 40–60 %), `co2` (ppm, green below 800, red above 1400), `pm25` (µg/m³, European Air Quality Index
+  bands), battery as reversed `traffic` from 0 to 100 %. With an unexpected unit the preset is spread over the
+  data range instead. Choosing a preset yourself (e.g. `traffic` for a battery) uses it as is, without the
+  automatic reverse and range.
 - `sum` adds up the per-period means (e.g. hourly averages of a power sensor); for meters use `change`.
 - `year` × `week` columns are labelled with calendar weeks (ISO weeks when the week starts on Monday) of the
   current year; a week belongs to the year it starts in.

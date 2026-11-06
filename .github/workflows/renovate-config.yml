@@ -18,4 +18,5 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: lts/*
+          package-manager-cache: false
       - run: npx --yes --package renovate -- renovate-config-validator --strict

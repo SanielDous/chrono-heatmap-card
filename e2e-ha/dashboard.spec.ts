@@ -125,7 +125,8 @@ test('card picker offers the card and its visual editor works', async ({ page })
   const entry = page.getByText('Chrono Heatmap', { exact: true }).first();
   await expect(entry).toBeVisible();
   await page.screenshot({ path: `${OUT}/card-picker.png` });
-  await entry.click();
+  // each picker entry is covered by a transparent overlay that receives the click
+  await entry.click({ force: true });
 
   // visual editor from getConfigForm(): our labels, a live preview, no error
   const editor = page.locator('hui-dialog-edit-card');

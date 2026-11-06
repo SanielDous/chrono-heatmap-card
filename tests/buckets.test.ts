@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateCells, bucketsFromHistory, bucketsFromStatistics, mergeBuckets } from '../src/buckets';
+import {
+  aggregateCells,
+  bucketsFromHistory,
+  bucketsFromStatistics,
+  meterModeFor,
+  mergeBuckets,
+} from '../src/buckets';
 import type { BaseBucket } from '../src/buckets';
 import { buildGrid } from '../src/grid';
 
@@ -79,6 +85,34 @@ describe('bucketsFromHistory (numeric)', () => {
     );
     expect(b[0].change).toBe(1);
     expect(b[1].change).toBe(2 + 1 + 1);
+  });
+
+  it('total_increasing: small drops are differences, drops over 10 % are resets (like HA)', () => {
+    const points = [
+      { t: T0, s: '10000' },
+      { t: T0 + 10 * MIN, s: '9995' }, // -5, no reset
+      { t: T0 + 20 * MIN, s: '10002' }, // +7
+      { t: T0 + 30 * MIN, s: '3' }, // reset → +3
+    ];
+    const b = bucketsFromHistory(points, T0, T0 + HOUR, HOUR, 'numeric', [], T0 + 10 * HOUR, 'reset');
+    expect(b[0].change).toBe(2 + 3);
+  });
+
+  it('total: drops are plain negative changes (e.g. net meter with export)', () => {
+    const points = [
+      { t: T0, s: '100' },
+      { t: T0 + 10 * MIN, s: '90' },
+      { t: T0 + 20 * MIN, s: '95' },
+    ];
+    const b = bucketsFromHistory(points, T0, T0 + HOUR, HOUR, 'numeric', [], T0 + 10 * HOUR, 'plain');
+    expect(b[0].change).toBe(-5);
+  });
+
+  it('picks the meter mode from the state_class', () => {
+    expect(meterModeFor('total_increasing')).toBe('reset');
+    expect(meterModeFor(undefined)).toBe('reset');
+    expect(meterModeFor('total')).toBe('plain');
+    expect(meterModeFor('measurement')).toBe('plain');
   });
 
   it('change across a gap compares with the last valid value', () => {

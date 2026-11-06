@@ -14,7 +14,7 @@ export interface BaseBucket {
   max: number | null;
   /** Value at the end of the bucket. */
   last: number | null;
-  /** Increase of a meter within the bucket (resets counted as increase from 0). */
+  /** Change of a meter within the bucket (see `MeterMode` for how drops are counted). */
   change: number | null;
   /** Share of time the entity was "on" (binary entities only). */
   onRatio: number | null;
@@ -32,6 +32,19 @@ export interface StatRow {
   state?: number | null;
   sum?: number | null;
   change?: number | null;
+}
+
+/**
+ * How a drop of a numeric value counts for `change`:
+ * - `reset`: like Home Assistant for `total_increasing` sensors — a drop of more than 10 % is a meter reset
+ *   (counted as increase from 0), a smaller drop is a plain (negative) difference.
+ * - `plain`: always the plain difference (`total` and `measurement` sensors may go down).
+ */
+export type MeterMode = 'reset' | 'plain';
+
+/** Whether drops of an entity's value are meter resets, based on its `state_class`. */
+export function meterModeFor(stateClass: string | undefined): MeterMode {
+  return stateClass === 'total' || stateClass === 'measurement' ? 'plain' : 'reset';
 }
 
 /** One state change: t = epoch ms, s = state string. */
@@ -104,6 +117,7 @@ export function bucketsFromHistory(
   mode: 'numeric' | 'binary',
   onStates: string[],
   now: number,
+  meterMode: MeterMode = 'reset',
 ): BaseBucket[] {
   const end = Math.min(to, now);
   if (end <= from || points.length === 0) return [];
@@ -134,7 +148,8 @@ export function bucketsFromHistory(
 
     // Meter change: count transitions that happen inside the window.
     if (mode === 'numeric' && v !== null && prevValid !== null && p.t > from && p.t < end) {
-      const delta = v >= prevValid ? v - prevValid : v; // drop = reset → count from 0
+      const reset = meterMode === 'reset' && v < prevValid * 0.9;
+      const delta = reset ? v : v - prevValid; // reset → count from 0
       const a = accFor(Math.floor((p.t - from) / sizeMs));
       a.change += delta;
       a.hasChange = true;

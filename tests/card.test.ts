@@ -83,6 +83,59 @@ describe('chrono-heatmap-card', () => {
     }
   });
 
+  it('debounces config changes and ignores unchanged configs', async () => {
+    const el = makeCard({ entity: 'sensor.outdoor_temperature', rows: 1 });
+    await settle(el);
+    let calls = 0;
+    const hass = el.hass!;
+    const callWS = hass.callWS.bind(hass);
+    hass.callWS = (<T>(msg: Record<string, unknown>) => {
+      calls++;
+      return callWS<T>(msg);
+    }) as typeof hass.callWS;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    try {
+      const base = { type: 'custom:chrono-heatmap-card', entity: 'sensor.outdoor_temperature' };
+      el.setConfig({ ...base, rows: 1 } as never); // unchanged → nothing
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(calls).toBe(0);
+      for (const rows of [2, 3, 4]) {
+        el.setConfig({ ...base, rows } as never); // "typing"
+        await vi.advanceTimersByTimeAsync(100);
+      }
+      expect(calls).toBe(0);
+      await vi.advanceTimersByTimeAsync(400);
+      expect(calls).toBeGreaterThan(0);
+      expect(calls).toBeLessThanOrEqual(3); // one load, not three
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps an owed reload when removed from the page inside the throttle window', async () => {
+    const el = makeCard({ entity: 'sensor.outdoor_temperature', rows: 1 });
+    await settle(el);
+    const hass = createMockHass({ now: NOW, language: 'en', dark: false });
+    let calls = 0;
+    const callWS = hass.callWS.bind(hass);
+    hass.callWS = (<T>(msg: Record<string, unknown>) => {
+      calls++;
+      return callWS<T>(msg);
+    }) as typeof hass.callWS;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+    try {
+      el.hass = { ...hass, locale: el.hass!.locale, states: { ...hass.states } }; // change → trailing load owed
+      el.remove();
+      await vi.advanceTimersByTimeAsync(10_000);
+      document.body.append(el); // back after 10 s, still inside the window
+      await vi.advanceTimersByTimeAsync(0);
+      expect(calls).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+      el.remove();
+    }
+  });
+
   it('getStubConfig prefers a temperature sensor', () => {
     const hass = createMockHass({ now: NOW, language: 'en', dark: false });
     expect(

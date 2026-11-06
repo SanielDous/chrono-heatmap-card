@@ -214,9 +214,14 @@ const berlinHour = (t: number) =>
 async function importStatistics(ws: Socket, meterNow: number): Promise<void> {
   const hours = pastHours(STAT_DAYS);
 
-  // temperature: daily cycle (min at 4:00, max at 16:00) plus a slow drift over the days
+  // temperature: daily cycle (min at 4:00, max at 16:00) plus a drift over the days
   const temperature = hours.map((t, i) => {
-    const mean = 8 + 6 * Math.sin(((berlinHour(t) - 10) / 24) * 2 * Math.PI) + 4 * Math.sin(i / 24 / 3);
+    const day = i / 24;
+    const mean =
+      10 +
+      7 * Math.sin(((berlinHour(t) - 10) / 24) * 2 * Math.PI) +
+      6 * Math.sin(day / 4) +
+      3 * Math.sin(day * 1.9);
     return {
       start: new Date(t).toISOString(),
       mean: round(mean, 2),
@@ -239,10 +244,12 @@ async function importStatistics(ws: Socket, meterNow: number): Promise<void> {
   });
 
   // energy: hourly consumption (more in the evening and on weekends); state ends at the current meter value
-  const usage = hours.map((t) => {
+  const usage = hours.map((t, i) => {
     const h = berlinHour(t);
     const weekend = [0, 6].includes(new Date(t).getUTCDay()) ? 1.4 : 1;
-    return round((0.15 + (h >= 7 && h < 22 ? 0.35 : 0) + (h >= 18 && h < 21 ? 0.6 : 0)) * weekend);
+    const dayFactor = 1 + 0.35 * Math.sin(Math.floor(i / 24) * 2.3);
+    const base = 0.15 + (h >= 7 && h < 22 ? 0.35 : 0) + (h >= 18 && h < 21 ? 0.6 : 0);
+    return round(base * weekend * dayFactor);
   });
   const total = usage.reduce((a, b) => a + b, 0);
   let sum = 0;
@@ -410,7 +417,11 @@ async function main(): Promise<void> {
   log(`done in ${((Date.now() - started) / 1000).toFixed(1)} s`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// exit right away: idle keep-alive connections would keep the process alive for a while
+main().then(
+  () => process.exit(0),
+  (e) => {
+    console.error(e);
+    process.exit(1);
+  },
+);

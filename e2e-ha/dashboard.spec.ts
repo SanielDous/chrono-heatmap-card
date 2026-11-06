@@ -47,8 +47,8 @@ test('logs in through the Home Assistant login page', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto('/');
   await expect(page).toHaveURL(/\/auth\/authorize/);
-  await page.getByLabel('Username').fill(session.username);
-  await page.getByLabel('Password').fill(session.password);
+  await page.getByRole('textbox', { name: 'Username' }).fill(session.username);
+  await page.getByRole('textbox', { name: 'Password' }).fill(session.password);
   await page.getByRole('button', { name: /log in/i }).click();
   await expect(page).not.toHaveURL(/\/auth\//);
   await expect(page.getByText('Chrono E2E').first()).toBeVisible();
@@ -100,18 +100,18 @@ test('hover shows a tooltip', async ({ page }) => {
 test('clicking the header opens more-info', async ({ page }) => {
   await openDashboard(page);
   await card(page, 'Temperature by hour').locator('.header').click();
-  const dialog = page.getByRole('dialog').filter({ hasText: 'Outdoor temperature' });
-  await expect(dialog).toBeVisible();
+  await expect(page.getByRole('dialog').getByText('Outdoor temperature').first()).toBeVisible();
   await page.screenshot({ path: `${OUT}/more-info.png` });
 });
 
 test('card picker offers the card and its visual editor works', async ({ page }) => {
   const errors = watchErrors(page);
+  // ?edit=1 opens the dashboard in edit mode; fall back to the toolbar button
   await page.goto(`${session.dashboard}?edit=1`);
   const addCard = page.getByRole('button', { name: 'Add card' });
-  if (!(await addCard.isVisible({ timeout: 15_000 }).catch(() => false))) {
-    await page.getByRole('button', { name: 'Edit dashboard' }).click();
-  }
+  const editDashboard = page.getByRole('button', { name: 'Edit dashboard' });
+  await expect(addCard.or(editDashboard).first()).toBeVisible();
+  if (!(await addCard.isVisible())) await editDashboard.click();
   await addCard.click();
 
   const picker = page.getByRole('dialog');

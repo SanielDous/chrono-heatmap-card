@@ -16,5 +16,15 @@
     "resolveJsonModule": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "dev", "tests", "e2e", "vite.config.ts", "vite.demo.config.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "dev",
+    "tests",
+    "e2e",
+    "e2e-ha",
+    "vite.config.ts",
+    "vite.demo.config.ts",
+    "playwright.config.ts",
+    "playwright.ha.config.ts"
+  ]
 }

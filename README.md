@@ -121,6 +121,34 @@ recorder/history WebSocket calls from deterministic fake sensors. URL parameters
 The visual editor (`getConfigForm`) is rendered by Home Assistant itself and can only be seen in a real HA
 instance: copy `dist/chrono-heatmap-card.js` to `config/www/`.
 
+### End-to-end test against a real Home Assistant
+
+The CI job _Home Assistant E2E_ runs on every pull request. It starts the official Home Assistant container
+(version pinned in `e2e-ha/compose.yaml`, updated by Renovate) with the minimal `e2e-ha/config/`, then
+`e2e-ha/setup.ts` (plain Node, no extra dependencies):
+
+- completes onboarding through the REST API (user, time zone Europe/Berlin, analytics, integration step),
+- imports 40 days of hourly long-term statistics (`recorder/import_statistics`) for a template temperature sensor
+  and a `total_increasing` energy meter, and toggles a door sensor a few times so there is recorder history,
+- installs the freshly built card as dashboard resource and creates a dashboard with a few heatmap cards.
+
+The Playwright tests in `e2e-ha/` (`playwright.ha.config.ts`, separate from the dev-page screenshots) log in
+through HA's login page, check that every card renders a filled grid without warnings, hover a cell, open
+more-info and find the card in the card picker with a working visual editor. Screenshots (light and dark) and
+the Playwright report are uploaded as artifact `ha-e2e-screenshots` and linked in a PR comment; on failure the
+HA logs are uploaded as `ha-e2e-logs`.
+
+Locally (needs Docker):
+
+```bash
+pnpm build
+rm -rf e2e-ha-run && mkdir e2e-ha-run && cp -r e2e-ha/config e2e-ha-run/config
+docker compose -f e2e-ha/compose.yaml up -d
+pnpm e2e:ha:setup  # → http://localhost:8123, user e2e / e2e-password-1234
+pnpm e2e:ha        # screenshots → e2e-ha-run/screenshots/
+docker compose -f e2e-ha/compose.yaml down
+```
+
 ### Commits & releases
 
 PR titles follow [Conventional Commits](https://www.conventionalcommits.org/) (squash merge). Every merge to `main`

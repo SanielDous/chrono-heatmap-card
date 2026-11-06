@@ -102,3 +102,84 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number, body });
             }
+
+  ha-e2e:
+    name: Home Assistant E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+      # The image (version pinned in e2e-ha/compose.yaml) is pulled while dependencies install;
+      # e2e-ha/setup.ts waits until HA answers.
+      - name: Start Home Assistant
+        run: |
+          mkdir -p e2e-ha-run
+          cp -r e2e-ha/config e2e-ha-run/config
+          nohup docker compose -f e2e-ha/compose.yaml up -d > e2e-ha-run/compose-up.log 2>&1 &
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - name: Set up Home Assistant (onboarding, statistics, history, dashboard)
+        id: setup
+        run: pnpm e2e:ha:setup
+      - run: pnpm e2e:ha
+      - name: Collect Home Assistant logs
+        if: failure()
+        run: |
+          cat e2e-ha-run/compose-up.log || true
+          docker compose -f e2e-ha/compose.yaml logs --no-color > e2e-ha-run/docker.log 2>&1 || true
+          sudo cp e2e-ha-run/config/home-assistant.log e2e-ha-run/home-assistant.log || true
+          sudo chmod a+r e2e-ha-run/home-assistant.log || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ha-e2e-logs
+          path: |
+            e2e-ha-run/compose-up.log
+            e2e-ha-run/docker.log
+            e2e-ha-run/home-assistant.log
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        id: upload
+        if: always()
+        with:
+          name: ha-e2e-screenshots
+          path: |
+            e2e-ha-run/screenshots/
+            e2e-ha-run/report/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != ''
+        uses: actions/github-script@v8
+        env:
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          JOB_STATUS: ${{ job.status }}
+          HA_VERSION: ${{ steps.setup.outputs.ha_version }}
+        with:
+          script: |
+            const marker = '<!-- chrono-heatmap-ha-e2e -->';
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const ok = process.env.JOB_STATUS === 'success';
+            const version = process.env.HA_VERSION ? ` ${process.env.HA_VERSION}` : '';
+            const body = `${marker}\n${ok ? '🏠' : '⚠️'} **Home Assistant${version} E2E** for \`${sha}\` ${ok ? 'passed' : 'failed'}: ` +
+              `[screenshots & report](${process.env.ARTIFACT_URL})\n\n` +
+              `Test dashboard in light and dark, tooltip, more-info, card picker and visual editor.`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

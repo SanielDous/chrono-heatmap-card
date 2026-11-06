@@ -15,7 +15,7 @@ weeks, months).
 Works with numeric sensors (mean / min / max / sum / last / change) and on/off entities (share of time "on").
 Data comes from long-term statistics where possible and from the recorder history otherwise.
 
-**[▶ Try the interactive demo](https://sanieldous.github.io/ha-heatmap-card/)** with mock data, no installation needed.
+**[▶ Try the interactive demo](https://sanieldous.github.io/chrono-heatmap-card/)** with mock data, no installation needed.
 
 <p>
   <img src="docs/images/month-day-temperature.png" alt="Months × days temperature heatmap" width="480">

@@ -552,7 +552,7 @@ if (!customElements.get(CARD_TAG)) {
     name: localize(lang, 'card.name'),
     description: localize(lang, 'card.description'),
     preview: true,
-    documentationURL: 'https://github.com/SanielDous/ha-heatmap-card',
+    documentationURL: 'https://github.com/SanielDous/chrono-heatmap-card',
   });
   console.info(
     `%c CHRONO-HEATMAP-CARD %c ${VERSION} `,

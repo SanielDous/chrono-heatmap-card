@@ -56,7 +56,7 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 ### 4.1 Name
 
 - Element/Typ: `chrono-heatmap-card` → YAML `type: custom:chrono-heatmap-card`.
-- Bundle: `dist/chrono-heatmap-card.js`. Repo-Name bleibt `ha-heatmap-card`; `hacs.json` setzt `filename`.
+- Bundle: `dist/chrono-heatmap-card.js`. Repo-Name `chrono-heatmap-card` (umbenannt: HACS installiert nach `www/community/<repo>` und kollidierte mit kandsten/ha-heatmap-card); `hacs.json` setzt `filename`.
 - _(Vorschlag von Claude, vom Nutzer erbeten – kann beim Review geändert werden.)_
 
 ### 4.2 Tech-Stack

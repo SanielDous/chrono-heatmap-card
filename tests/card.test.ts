@@ -142,6 +142,8 @@ describe('chrono-heatmap-card', () => {
       ChronoHeatmapCard.getStubConfig(hass, ['sensor.house_power', 'sensor.outdoor_temperature']),
     ).toEqual({
       entity: 'sensor.outdoor_temperature',
+      show_legend: true,
+      show_labels: true,
     });
   });
 });

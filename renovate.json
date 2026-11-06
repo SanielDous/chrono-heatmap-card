@@ -2,15 +2,21 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":semanticCommits"],
   "timezone": "Europe/Berlin",
-  "schedule": ["before 7am on monday"],
+  "schedule": ["* 0-6 * * 1"],
   "minimumReleaseAge": "30 days",
   "internalChecksFilter": "strict",
   "rangeStrategy": "pin",
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 7am on the first day of the month"]
+    "schedule": ["* 0-6 1 * *"],
+    "minimumReleaseAge": null
   },
   "packageRules": [
+    {
+      "description": "The overrides in pnpm-workspace.yaml are temporary pins for the local npm proxy; maintain them by hand",
+      "matchDepTypes": ["pnpm-workspace.overrides"],
+      "enabled": false
+    },
     {
       "description": "Small devDependency updates in one PR",
       "matchDepTypes": ["devDependencies"],

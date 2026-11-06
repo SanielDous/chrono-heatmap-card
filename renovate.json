@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["* 0-6 * * 1"],
+  "minimumReleaseAge": "30 days",
+  "internalChecksFilter": "strict",
+  "rangeStrategy": "pin",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 0-6 1 * *"],
+    "minimumReleaseAge": null
+  },
+  "packageRules": [
+    {
+      "description": "The overrides in pnpm-workspace.yaml are temporary pins for the local npm proxy; maintain them by hand",
+      "matchDepTypes": ["pnpm-workspace.overrides"],
+      "enabled": false
+    },
+    {
+      "description": "Small devDependency updates in one PR",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev dependencies (non-major)"
+    },
+    {
+      "description": "Playwright on its own: a new version needs a matching local browser (pnpm exec playwright install chromium)",
+      "matchPackageNames": ["@playwright/test", "playwright", "playwright-core"],
+      "groupName": "playwright"
+    },
+    {
+      "description": "GitHub Actions in one PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    }
+  ]
+}

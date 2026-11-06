@@ -1,22 +1,71 @@
 import { describe, expect, it } from 'vitest';
 import { formFieldNames, getConfigFormSchema } from '../src/editor';
-import { localize, TRANSLATIONS } from '../src/i18n';
+import { localize, resolveLanguage, TRANSLATIONS } from '../src/i18n';
+
+const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 describe('i18n', () => {
-  it('German has every English key', () => {
-    const missing = Object.keys(TRANSLATIONS.en).filter((k) => !(k in TRANSLATIONS.de));
-    expect(missing).toEqual([]);
+  const languages = Object.keys(TRANSLATIONS).filter((l) => l !== 'en');
+
+  it('ships the expected languages', () => {
+    expect(Object.keys(TRANSLATIONS).sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'sv']);
+  });
+
+  it.each(languages)('%s has exactly the English keys', (lang) => {
+    expect(Object.keys(TRANSLATIONS[lang]).sort()).toEqual(Object.keys(TRANSLATIONS.en).sort());
+  });
+
+  it.each(languages)('%s keeps the placeholders of every key', (lang) => {
+    for (const [key, text] of Object.entries(TRANSLATIONS.en)) {
+      expect(placeholders(TRANSLATIONS[lang][key]), `${lang} ${key}`).toEqual(placeholders(text));
+    }
+  });
+
+  it.each(languages)('%s has no empty or untrimmed strings', (lang) => {
+    for (const [key, text] of Object.entries(TRANSLATIONS[lang])) {
+      expect(text.trim(), `${lang} ${key}`).toBe(text);
+      expect(text, `${lang} ${key}`).not.toBe('');
+    }
+  });
+
+  it.each([
+    ['en', 'en'],
+    ['en-GB', 'en'],
+    ['de', 'de'],
+    ['de-CH', 'de'],
+    ['fr-FR', 'fr'],
+    ['fr-CA', 'fr'],
+    ['nl-BE', 'nl'],
+    ['es-419', 'es'],
+    ['ES_es', 'es'],
+    ['it', 'it'],
+    ['pl', 'pl'],
+    ['sv-SE', 'sv'],
+    ['pt', 'en'],
+    ['pt-BR', 'en'],
+    ['zh-Hans', 'en'],
+    ['constructor', 'en'],
+    ['', 'en'],
+    [undefined, 'en'],
+  ])('resolves %s to %s', (lang, expected) => {
+    expect(resolveLanguage(lang)).toBe(expected);
   });
 
   it('falls back to English for unknown languages and fills params', () => {
-    expect(localize('fr', 'ui.entity_not_found', { entity: 'sensor.x' })).toBe(
+    expect(localize('pt', 'ui.entity_not_found', { entity: 'sensor.x' })).toBe(
       'Entity not available: sensor.x',
     );
     expect(localize('de-DE', 'ui.no_data')).toBe('Keine Daten');
+    expect(localize('fr-FR', 'ui.week_short', { n: 7 })).toBe('S7');
+    expect(localize('sv', 'ui.week_short', { n: 7 })).toBe('V7');
+    expect(localize('nl-BE', 'ui.entity_not_found', { entity: 'sensor.x' })).toBe(
+      'Entiteit niet beschikbaar: sensor.x',
+    );
   });
 
   it('returns the key for unknown keys', () => {
     expect(localize('en', 'nope')).toBe('nope');
+    expect(localize('fr', 'nope')).toBe('nope');
   });
 });
 

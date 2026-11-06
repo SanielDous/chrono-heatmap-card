@@ -15,6 +15,9 @@ weeks, months).
 Works with numeric sensors (mean / min / max / sum / last / change) and on/off entities (share of time "on").
 Data comes from long-term statistics where possible and from the recorder history otherwise.
 
+The card and its visual editor are available in English, German, French, Dutch, Spanish, Italian, Polish and
+Swedish; the language follows your HA profile, other languages fall back to English.
+
 **[▶ Try the interactive demo](https://sanieldous.github.io/chrono-heatmap-card/)** with mock data, no installation needed.
 
 <p>

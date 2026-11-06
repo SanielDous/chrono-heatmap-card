@@ -57,7 +57,7 @@ export const PRESETS: Record<PresetName, Preset> = {
   // PM2.5 bands of the European Air Quality Index (good 0–5, fair –15, moderate –50, poor –90, very poor –140).
   pm25: {
     type: 'absolute',
-    units: ['µg/m³', 'μg/m³'],
+    units: ['μg/m³', 'µg/m³'], // HA uses U+03BC; U+00B5 for hand-made sensors
     steps: [
       { value: 0, color: '#1a9850' },
       { value: 5, color: '#66bd63' },
@@ -183,11 +183,9 @@ function toPositions(steps: ScaleStep[]): ScaleStep[] {
   return steps.map((s) => ({ value: (s.value - first) / span, color: s.color }));
 }
 
-/** Mirror the colors over the same value range. */
+/** Flip the colors, keeping the stop values (thresholds stay where they are). */
 function reversed(stops: ScaleStep[]): ScaleStep[] {
-  const lo = stops[0].value;
-  const hi = stops[stops.length - 1].value;
-  return stops.map((s) => ({ value: lo + hi - s.value, color: s.color })).reverse();
+  return stops.map((s, i) => ({ value: s.value, color: stops[stops.length - 1 - i].color }));
 }
 
 export function resolveScale(cfg: NormalizedScale, ctx: ScaleContext): ResolvedScale {
@@ -204,8 +202,10 @@ export function resolveScale(cfg: NormalizedScale, ctx: ScaleContext): ResolvedS
     // `reverse` flips whatever the scale would show, so false (the editor's unchecked box) is always the default
     reverse = (auto?.reverse ?? false) !== reverse;
     const preset = PRESETS[name];
-    const unitFits = !ctx.unit || !preset.units || preset.units.includes(ctx.unit);
-    const type = cfg.type ?? (preset.type === 'absolute' && unitFits ? 'absolute' : 'relative');
+    // automatic presets fall back to relative for an unexpected unit; an explicitly chosen preset is used as is
+    const unitFits = !auto || !ctx.unit || !preset.units || preset.units.includes(ctx.unit);
+    // relative presets have positions, not values: they can only be spread over a range
+    const type = preset.type === 'relative' ? 'relative' : (cfg.type ?? (unitFits ? 'absolute' : 'relative'));
     if (type === 'absolute') {
       const fahrenheit = name === 'temperature' && ctx.unit === '°F';
       stops = preset.steps.map((s) => ({ value: fahrenheit ? cToF(s.value) : s.value, color: s.color }));

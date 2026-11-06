@@ -92,7 +92,8 @@ Notes:
 - Automatic color scales by device class (only for mean/min/max/last): `temperature` (°C/°F), `humidity` (%,
   green at 40–60 %), `co2` (ppm, green below 800, red above 1400), `pm25` (µg/m³, European Air Quality Index
   bands), battery as reversed `traffic` from 0 to 100 %. With an unexpected unit the preset is spread over the
-  data range instead.
+  data range instead. Choosing a preset yourself (e.g. `traffic` for a battery) uses it as is, without the
+  automatic reverse and range.
 - `sum` adds up the per-period means (e.g. hourly averages of a power sensor); for meters use `change`.
 - `year` × `week` columns are labelled with calendar weeks (ISO weeks when the week starts on Monday) of the
   current year; a week belongs to the year it starts in.

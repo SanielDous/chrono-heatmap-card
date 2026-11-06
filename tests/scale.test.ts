@@ -120,10 +120,27 @@ describe('device class presets', () => {
     expect(colorFor(s, 1000)).toBe('#fee08b');
   });
 
-  it('falls back to a relative scale when the unit does not match the preset', () => {
-    const s = resolveScale({ preset: 'humidity' }, { ...ctx, unit: 'g/m³', values: [5, 15] });
+  it('falls back to a relative scale when the unit does not match the automatic preset', () => {
+    const s = resolveScale({}, { ...ctx, deviceClass: 'humidity', unit: 'g/m³', values: [5, 15] });
     expect([s.min, s.max]).toEqual([5, 15]);
     expect(s.stops).toHaveLength(PRESETS.humidity.steps.length);
+  });
+
+  it('keeps an explicitly chosen absolute preset absolute, whatever the unit', () => {
+    const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: 'C', values: [18, 24] });
+    expect([s.min, s.max]).toEqual([-10, 35]);
+  });
+
+  it('never uses relative preset positions as absolute values', () => {
+    const s = resolveScale({ type: 'absolute' }, { ...ctx, deviceClass: 'battery', unit: '%', values: [50] });
+    expect([s.min, s.max]).toEqual([0, 100]);
+  });
+
+  it('reverse keeps the thresholds of uneven presets', () => {
+    const s = resolveScale({ preset: 'co2', reverse: true }, { ...ctx, unit: 'ppm', values: [] });
+    expect(s.stops.map((x) => x.value)).toEqual(PRESETS.co2.steps.map((x) => x.value));
+    expect(colorFor(s, 1000)).toBe('#fc8d59'); // was yellow, now the mirrored neighbour color
+    expect(colorFor(s, 400)).toBe('#7f0000');
   });
 
   it('accepts both micro signs for PM2.5', () => {

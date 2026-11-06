@@ -36,6 +36,7 @@ describe('getConfigFormSchema', () => {
         'scale.max',
         'scale.min',
         'scale.preset',
+        'scale.reverse',
         'scale.type',
         'show_labels',
         'show_legend',

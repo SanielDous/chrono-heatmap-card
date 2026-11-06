@@ -157,7 +157,50 @@ const co2: Scenario = {
   },
 };
 
-export const SCENARIOS: Scenario[] = [outdoor, powerScenario, energyScenario, door, co2];
+const humidity: Scenario = {
+  entity_id: 'sensor.bathroom_humidity',
+  name: 'Bathroom humidity',
+  attributes: {
+    friendly_name: 'Bathroom humidity',
+    unit_of_measurement: '%',
+    device_class: 'humidity',
+    state_class: 'measurement',
+  },
+  sampleEvery: 5 * MIN,
+  hasStatistics: true,
+  decimals: 0,
+  valueAt(t) {
+    const h = hourOfDay(t);
+    // showers in the morning (and some evenings) push humidity up, then it decays
+    const sinceShower = (start: number) => (h >= start ? h - start : Infinity);
+    const evening = noise(51, Math.floor(t / DAY)) > 0.6 ? Math.exp(-sinceShower(21) / 0.8) : 0;
+    const shower = Math.exp(-sinceShower(6.8) / 0.8) + evening;
+    return Math.min(98, 44 + 8 * smooth(52, t, 2 * DAY) + 45 * shower);
+  },
+};
+
+const battery: Scenario = {
+  entity_id: 'sensor.phone_battery',
+  name: 'Phone battery',
+  attributes: {
+    friendly_name: 'Phone battery',
+    unit_of_measurement: '%',
+    device_class: 'battery',
+    state_class: 'measurement',
+  },
+  sampleEvery: 5 * MIN,
+  hasStatistics: true,
+  decimals: 0,
+  valueAt(t) {
+    // charged overnight (23–7 h), then drains during the day at a varying rate
+    const h = hourOfDay(t);
+    if (h >= 23 || h < 7) return Math.min(100, 30 + ((h + 1) % 24) * 12);
+    const rate = 5 + 3 * noise(61, Math.floor(t / DAY));
+    return Math.max(4, 100 - (h - 7) * rate);
+  },
+};
+
+export const SCENARIOS: Scenario[] = [outdoor, powerScenario, energyScenario, door, co2, humidity, battery];
 
 export function scenarioFor(entityId: string): Scenario | undefined {
   return SCENARIOS.find((s) => s.entity_id === entityId);

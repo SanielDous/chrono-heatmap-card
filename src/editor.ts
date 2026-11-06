@@ -71,6 +71,7 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
             { name: 'type', selector: select(['absolute', 'relative'], 'option') },
             { name: 'min', selector: { number: { mode: 'box', step: 'any' } } },
             { name: 'max', selector: { number: { mode: 'box', step: 'any' } } },
+            { name: 'reverse', selector: { boolean: {} } },
           ],
         },
       ],

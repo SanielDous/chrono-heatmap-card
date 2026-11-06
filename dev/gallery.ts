@@ -95,6 +95,24 @@ export const GALLERY: GalleryItem[] = [
     },
   },
   {
+    id: 'week-hour-co2',
+    config: {
+      entity: 'sensor.office_co2',
+      title: 'CO₂ · automatic scale',
+      row_unit: 'week',
+      column_unit: 'hour',
+      rows: 2,
+    },
+  },
+  {
+    id: 'day-hour-humidity',
+    config: { entity: 'sensor.bathroom_humidity', title: 'Bathroom humidity', rows: 7 },
+  },
+  {
+    id: 'day-hour-battery',
+    config: { entity: 'sensor.phone_battery', title: 'Phone battery · reversed traffic light', rows: 7 },
+  },
+  {
     id: 'no-labels',
     config: {
       entity: 'sensor.outdoor_temperature',

@@ -3,7 +3,7 @@ export type ColumnUnit = 'minute' | '5minute' | 'hour' | 'day' | 'week' | 'month
 export type Aggregation = 'mean' | 'min' | 'max' | 'sum' | 'last' | 'change' | 'on_ratio';
 export type Source = 'auto' | 'statistics' | 'history';
 export type Orientation = 'horizontal' | 'vertical';
-export type PresetName = 'temperature' | 'viridis' | 'mono';
+export type PresetName = 'temperature' | 'humidity' | 'co2' | 'pm25' | 'traffic' | 'viridis' | 'mono';
 export type ScaleType = 'absolute' | 'relative';
 
 export interface ScaleStep {
@@ -16,6 +16,8 @@ export interface ScaleConfig {
   type?: ScaleType;
   min?: number;
   max?: number;
+  /** Flip the colors of the chosen scale (e.g. traffic light: high = green). */
+  reverse?: boolean;
   steps?: ScaleStep[];
 }
 
@@ -41,6 +43,7 @@ export interface NormalizedScale {
   type?: ScaleType;
   min?: number;
   max?: number;
+  reverse?: boolean;
   steps?: ScaleStep[];
 }
 
@@ -64,7 +67,17 @@ export interface NormalizedConfig {
 export const ROW_UNITS: RowUnit[] = ['hour', 'day', 'week', 'month', 'year'];
 export const COLUMN_UNITS: ColumnUnit[] = ['minute', '5minute', 'hour', 'day', 'week', 'month'];
 export const AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'sum', 'last', 'change', 'on_ratio'];
-export const PRESET_NAMES: PresetName[] = ['temperature', 'viridis', 'mono'];
+export const PRESET_NAMES: PresetName[] = [
+  'temperature',
+  'humidity',
+  'co2',
+  'pm25',
+  'traffic',
+  'viridis',
+  'mono',
+];
+/** Presets with fixed values in the entity's unit (the others spread over the data range). */
+export const ABSOLUTE_PRESETS: PresetName[] = ['temperature', 'humidity', 'co2', 'pm25'];
 
 /** Allowed column units per row unit; the first entry is the default. */
 export const ALLOWED_COLUMNS: Record<RowUnit, ColumnUnit[]> = {
@@ -142,11 +155,16 @@ function normalizeScale(scale: ScaleConfig | undefined): NormalizedScale {
     if (type === 'relative' && steps.some((s) => s.value < 0 || s.value > 1)) {
       throw new ConfigError('error.relative_steps');
     }
-  } else if (type === 'absolute' && preset !== undefined && preset !== 'temperature') {
+  } else if (type === 'absolute' && preset !== undefined && !ABSOLUTE_PRESETS.includes(preset)) {
     throw new ConfigError('error.absolute_needs_steps', { preset });
   }
 
-  return { preset, type, min, max, steps };
+  if (scale.reverse !== undefined && scale.reverse !== null && typeof scale.reverse !== 'boolean') {
+    throw new ConfigError('error.invalid_option', { option: 'scale.reverse', value: String(scale.reverse) });
+  }
+  const reverse = scale.reverse === true ? true : undefined;
+
+  return { preset, type, min, max, reverse, steps };
 }
 
 export function normalizeConfig(config: CardConfig): NormalizedConfig {

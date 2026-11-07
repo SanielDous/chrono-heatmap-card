@@ -15,7 +15,7 @@ import type { HassEntity, HomeAssistant } from './hass-types';
 import { localize } from './i18n';
 import { colorFor, legendGradient, resolveScale, type ResolvedScale } from './scale';
 import { STYLES } from './styles';
-import { trackUpdates } from './update-check';
+import { checkForUpdate, trackUpdates } from './update-check';
 
 export const CARD_TAG = 'chrono-heatmap-card';
 const VERSION = typeof __CARD_VERSION__ === 'string' ? __CARD_VERSION__ : 'dev';
@@ -192,6 +192,8 @@ export class ChronoHeatmapCard extends HTMLElement {
   // ---- lifecycle ----------------------------------------------------------
 
   connectedCallback(): void {
+    // e.g. back on the dashboard after updating the card in the Marketplace (throttled, once per page)
+    void checkForUpdate();
     this._timer = setInterval(() => this._scheduleLoad(true), REFRESH_INTERVAL_MS);
     if (typeof ResizeObserver !== 'undefined' && !this._resizeObserver) {
       this._resizeObserver = new ResizeObserver((entries) => {

@@ -10,7 +10,10 @@ import { localize } from './i18n';
  */
 
 const FILE = 'chrono-heatmap-card.js';
-/** Minimum time between two resource checks (they run on page load, when the app comes back and hourly). */
+/**
+ * Minimum time between two resource checks. They run on page load, when the app comes back to the
+ * foreground, when a card is shown again (e.g. back from the Marketplace page) and hourly.
+ */
 const MIN_INTERVAL_MS = 10_000;
 const HOURLY_MS = 60 * 60_000;
 export const UPDATE_TOAST_ID = 'chrono-heatmap-card-update';
@@ -53,6 +56,7 @@ export function compareResources(
 let hass: HomeAssistant | undefined;
 let loadedFrom: string | undefined;
 let started = false;
+let decided = false;
 let lastCheck = -Infinity;
 let inFlight = false;
 let notified = false;
@@ -64,8 +68,8 @@ function language(): string {
 function notify(): void {
   notified = true;
   const lang = language();
-  const target = document.querySelector('home-assistant') ?? document.body;
-  target.dispatchEvent(
+  // HA's toasts listen on the <home-assistant> element
+  document.querySelector('home-assistant')?.dispatchEvent(
     new CustomEvent('hass-notification', {
       bubbles: true,
       composed: true,
@@ -86,7 +90,7 @@ export async function checkForUpdate(now = Date.now()): Promise<void> {
   lastCheck = now;
   try {
     const resources = await hass.callWS<{ url: string }[]>({ type: 'lovelace/resources' });
-    if (compareResources(loadedFrom, resources, location.href) === 'outdated') notify();
+    if (compareResources(loadedFrom, resources, location.origin) === 'outdated') notify();
   } catch {
     // older HA, no connection: try again next time
   } finally {
@@ -96,8 +100,11 @@ export async function checkForUpdate(now = Date.now()): Promise<void> {
 
 /** Called with every new hass object; the first call of the page starts watching. */
 export function trackUpdates(newHass: HomeAssistant, moduleUrl: string): void {
-  hass = newHass;
-  if (started) return;
+  if (decided) {
+    if (started) hass = newHass;
+    return;
+  }
+  decided = true;
   let url: URL;
   try {
     url = new URL(moduleUrl);
@@ -106,6 +113,7 @@ export function trackUpdates(newHass: HomeAssistant, moduleUrl: string): void {
   }
   // only the released bundle loaded as a dashboard resource (not the dev server or tests)
   if (fileName(url) !== FILE || typeof document === 'undefined') return;
+  hass = newHass;
   started = true;
   loadedFrom = moduleUrl;
   document.addEventListener('visibilitychange', () => {
@@ -120,6 +128,7 @@ export function resetUpdateCheck(): void {
   hass = undefined;
   loadedFrom = undefined;
   started = false;
+  decided = false;
   lastCheck = -Infinity;
   inFlight = false;
   notified = false;

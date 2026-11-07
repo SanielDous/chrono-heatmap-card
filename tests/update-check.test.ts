@@ -58,7 +58,10 @@ describe('checkForUpdate', () => {
   };
   const toasts = () => {
     const seen: { id: string; message: string; action: { text: string } }[] = [];
-    document.body.addEventListener('hass-notification', (e) => seen.push((e as CustomEvent).detail));
+    const root =
+      document.querySelector('home-assistant') ??
+      document.body.appendChild(document.createElement('home-assistant'));
+    root.addEventListener('hass-notification', (e) => seen.push((e as CustomEvent).detail));
     return seen;
   };
 

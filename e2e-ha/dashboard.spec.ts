@@ -148,8 +148,12 @@ test('offers a reload when the dashboard resource was updated meanwhile', async 
   await expect(toast).toHaveCount(0);
 
   type Resource = { id: string; url: string; type: string };
-  const callWS = <T>(msg: Record<string, unknown>) =>
-    page.evaluate(
+  // waits for hass first, so it also works right after a (failed) reload
+  const callWS = async <T>(msg: Record<string, unknown>) => {
+    await page.waitForFunction(
+      () => !!(document.querySelector('home-assistant') as { hass?: unknown } | null)?.hass,
+    );
+    return page.evaluate(
       (m) =>
         (
           document.querySelector('home-assistant') as unknown as {
@@ -158,15 +162,19 @@ test('offers a reload when the dashboard resource was updated meanwhile', async 
         ).hass.callWS(m),
       msg,
     ) as Promise<T>;
+  };
   const resources = await callWS<Resource[]>({ type: 'lovelace/resources' });
   const ours = resources.find((r) => r.url.includes('chrono-heatmap-card.js'))!;
   expect(ours, 'dashboard resource of the card').toBeDefined();
+  // e2e-ha/setup.ts creates the resource without a version tag; a unique tag per run keeps a retry working
+  const original = ours.url.split('?')[0];
+  const tag = `e2e-${Date.now()}`;
   try {
     // what the Marketplace does on an update: same file, new cache-busting URL
     await callWS({
       type: 'lovelace/resources/update',
       resource_id: ours.id,
-      url: `${ours.url.split('?')[0]}?v=e2e-next`,
+      url: `${original}?v=${tag}`,
       res_type: 'module',
     });
     // the app comes back to the foreground (checks are at least 10 s apart)
@@ -176,24 +184,23 @@ test('offers a reload when the dashboard resource was updated meanwhile', async 
     await page.screenshot({ path: `${OUT}/update-toast.png` });
 
     // the toast's button reloads the page, which then runs the new resource URL: no toast anymore
+    const reloaded = page.waitForEvent('load');
     await page.getByRole('button', { name: 'Reload' }).click();
-    await page.waitForLoadState('load');
-    await expect
-      .poll(() =>
-        page.evaluate(() =>
-          performance
-            .getEntriesByType('resource')
-            .some((e) => e.name.includes('chrono-heatmap-card.js?v=e2e-next')),
-        ),
-      )
-      .toBe(true);
+    await reloaded;
+    await page.waitForFunction(
+      (t) =>
+        performance
+          .getEntriesByType('resource')
+          .some((e) => e.name.includes(`chrono-heatmap-card.js?v=${t}`)),
+      tag,
+    );
     await page.waitForTimeout(2_000);
     await expect(toast).toHaveCount(0);
   } finally {
     await callWS({
       type: 'lovelace/resources/update',
       resource_id: ours.id,
-      url: ours.url,
+      url: original,
       res_type: 'module',
     });
   }

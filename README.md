@@ -64,7 +64,7 @@ All options (also available in the visual editor, except `scale.steps`):
 | `source`          | `auto`                                                                                                 | `auto` · `statistics` · `history`                                                                                                |
 | `aggregation`     | auto                                                                                                   | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
 | `on_states`       | by domain                                                                                              | States counted as "on" for `on_ratio` (default `on`; person/device_tracker `home`, cover `open`, media_player `playing`, …)      |
-| `scale.preset`    | from device class: temperature, humidity, CO₂, PM2.5, battery (reversed traffic light); else `viridis` | `temperature` · `humidity` · `co2` · `pm25` · `traffic` · `viridis` · `mono`                                                     |
+| `scale.preset`    | from device class: temperature, humidity, CO₂, PM2.5, battery (reversed traffic light); else `viridis` | `temperature` · `indoor_temperature` · `humidity` · `co2` · `pm25` · `traffic` · `viridis` · `mono`                              |
 | `scale.reverse`   | `false`                                                                                                | `true` flips the colors of the scale (e.g. `traffic` for "high is good")                                                         |
 | `scale.type`      | from preset                                                                                            | `absolute`: step values in entity units · `relative`: step positions 0–1 spread over min..max                                    |
 | `scale.min`/`max` | from data                                                                                              | Fixed range for relative scales                                                                                                  |
@@ -102,6 +102,9 @@ Notes:
   bands), battery as reversed `traffic` from 0 to 100 %. With an unexpected unit the preset is spread over the
   data range instead. Choosing a preset yourself (e.g. `traffic` for a battery) uses it as is, without the
   automatic reverse and range.
+- `indoor_temperature` (°C/°F) has finer steps between 14 and 28 °C (green at 20–22 °C) for rooms, where the
+  outdoor-oriented `temperature` scale shows little contrast. Device classes can't tell indoor from outdoor, so
+  choose it yourself (`scale.preset: indoor_temperature`).
 - `sum` adds up the per-period means (e.g. hourly averages of a power sensor); for meters use `change`.
 - `year` × `week` columns are labelled with calendar weeks (ISO weeks when the week starts on Monday) of the
   current year; a week belongs to the year it starts in.

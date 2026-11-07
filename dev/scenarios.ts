@@ -69,6 +69,27 @@ const outdoor: Scenario = {
   },
 };
 
+const indoor: Scenario = {
+  entity_id: 'sensor.living_room_temperature',
+  name: 'Living room temperature',
+  attributes: {
+    friendly_name: 'Living room temperature',
+    unit_of_measurement: '°C',
+    device_class: 'temperature',
+    state_class: 'measurement',
+  },
+  sampleEvery: 5 * MIN,
+  hasStatistics: true,
+  decimals: 1,
+  valueAt(t) {
+    // heated 6–22 h to about 21 °C, night setback to about 18.5 °C, some sun in the afternoon
+    const h = hourOfDay(t);
+    const heated = h >= 6 && h < 22 ? 1 : 0;
+    const sun = Math.max(0, Math.sin((Math.PI * (h - 11)) / 8)) * (1.5 + smooth(31, t, 2 * DAY));
+    return 18.6 + 2.4 * heated + sun + 0.4 * smooth(32, t, 3 * HOUR);
+  },
+};
+
 const power = (t: number): number => {
   const h = hourOfDay(t);
   const morning = Math.exp(-((h - 7) ** 2) / 1.5) * 1400;
@@ -200,7 +221,16 @@ const battery: Scenario = {
   },
 };
 
-export const SCENARIOS: Scenario[] = [outdoor, powerScenario, energyScenario, door, co2, humidity, battery];
+export const SCENARIOS: Scenario[] = [
+  outdoor,
+  indoor,
+  powerScenario,
+  energyScenario,
+  door,
+  co2,
+  humidity,
+  battery,
+];
 
 export function scenarioFor(entityId: string): Scenario | undefined {
   return SCENARIOS.find((s) => s.entity_id === entityId);

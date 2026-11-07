@@ -16,6 +16,22 @@ describe('resolveScale', () => {
     expect(s.min).toBe(14);
   });
 
+  it('uses the indoor temperature preset as is when chosen, also in °F', () => {
+    const c = resolveScale(
+      { preset: 'indoor_temperature' },
+      { ...ctx, deviceClass: 'temperature', unit: '°C' },
+    );
+    expect(c.stops).toEqual(PRESETS.indoor_temperature.steps);
+    expect([c.min, c.max]).toEqual([14, 28]);
+    const f = resolveScale({ preset: 'indoor_temperature' }, { ...ctx, unit: '°F' });
+    expect(f.min).toBeCloseTo(57.2);
+    expect(f.max).toBeCloseTo(82.4);
+  });
+
+  it('keeps the outdoor temperature preset as the automatic choice', () => {
+    expect(autoPreset({ ...ctx, deviceClass: 'temperature', unit: '°C' }).preset).toBe('temperature');
+  });
+
   it('defaults to viridis spread over the data range', () => {
     const s = resolveScale({}, { ...ctx, values: [100, 300, 200] });
     expect(s.min).toBe(100);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ABSOLUTE_PRESETS, PRESET_NAMES } from '../src/config';
 import { autoPreset, colorFor, legendGradient, PRESETS, resolveScale } from '../src/scale';
 
 const ctx = { values: [] as number[], isRatio: false };
@@ -28,8 +29,8 @@ describe('resolveScale', () => {
     expect(f.max).toBeCloseTo(82.4);
   });
 
-  it('keeps the outdoor temperature preset as the automatic choice', () => {
-    expect(autoPreset({ ...ctx, deviceClass: 'temperature', unit: '°C' }).preset).toBe('temperature');
+  it('lists exactly the absolute presets in ABSOLUTE_PRESETS', () => {
+    expect(ABSOLUTE_PRESETS).toEqual(PRESET_NAMES.filter((n) => PRESETS[n].type === 'absolute'));
   });
 
   it('defaults to viridis spread over the data range', () => {

@@ -28,18 +28,18 @@ Swedish; the language follows your HA profile, other languages fall back to Engl
 
 ## Installation
 
-Requires Home Assistant 2024.8 or newer (tested with the version in [`e2e-ha/compose.yaml`](e2e-ha/compose.yaml)).
+Requires Home Assistant 2024.8 or newer (tested with the version in [`e2e-ha/compose.yaml`](https://github.com/SanielDous/chrono-heatmap-card/blob/main/e2e-ha/compose.yaml)).
 
 ### Marketplace / HACS
 
 1. Open the Marketplace (HACS) and search for **Chrono Heatmap Card**.
-2. Install it and reload the browser. The dashboard resource is added automatically.
+2. Install it and reload the browser. The dashboard resource is added automatically (with YAML-managed resources, add `/local/community/chrono-heatmap-card/chrono-heatmap-card.js` yourself).
 
 Until the card is listed there, add it as a custom repository first: ⋮ → _Custom repositories_ → this repository's URL, type **Dashboard**.
 
 ### Manual
 
-1. Download `chrono-heatmap-card.js` from the latest [release](../../releases).
+1. Download `chrono-heatmap-card.js` from the latest [release](https://github.com/SanielDous/chrono-heatmap-card/releases).
 2. Copy it to `config/www/` and add `/local/chrono-heatmap-card.js` as a dashboard resource (type _JavaScript module_).
 
 ## Configuration

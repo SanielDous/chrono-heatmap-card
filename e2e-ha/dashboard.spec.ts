@@ -141,7 +141,8 @@ test('card picker offers the card and its visual editor works', async ({ page })
 test('offers a reload when the dashboard resource was updated meanwhile', async ({ page }) => {
   const errors = watchErrors(page);
   await openDashboard(page);
-  const toast = page.getByText('Chrono Heatmap Card was updated', { exact: false });
+  // the toast text (the second copy is the hidden screen-reader announcement)
+  const toast = page.locator('span.message', { hasText: 'Chrono Heatmap Card was updated' });
   // unchanged resource: no toast
   await page.waitForTimeout(2_000);
   await expect(toast).toHaveCount(0);

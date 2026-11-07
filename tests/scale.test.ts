@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ABSOLUTE_PRESETS, PRESET_NAMES } from '../src/config';
 import { autoPreset, colorFor, legendGradient, PRESETS, resolveScale } from '../src/scale';
 
 const ctx = { values: [] as number[], isRatio: false };
@@ -14,6 +15,22 @@ describe('resolveScale', () => {
     const idx = PRESETS.temperature.steps.findIndex((x) => x.value === 19);
     expect(s.stops[idx].value).toBeCloseTo(66.2);
     expect(s.min).toBe(14);
+  });
+
+  it('uses the indoor temperature preset as is when chosen, also in °F', () => {
+    const c = resolveScale(
+      { preset: 'indoor_temperature' },
+      { ...ctx, deviceClass: 'temperature', unit: '°C' },
+    );
+    expect(c.stops).toEqual(PRESETS.indoor_temperature.steps);
+    expect([c.min, c.max]).toEqual([14, 28]);
+    const f = resolveScale({ preset: 'indoor_temperature' }, { ...ctx, unit: '°F' });
+    expect(f.min).toBeCloseTo(57.2);
+    expect(f.max).toBeCloseTo(82.4);
+  });
+
+  it('lists exactly the absolute presets in ABSOLUTE_PRESETS', () => {
+    expect(ABSOLUTE_PRESETS).toEqual(PRESET_NAMES.filter((n) => PRESETS[n].type === 'absolute'));
   });
 
   it('defaults to viridis spread over the data range', () => {

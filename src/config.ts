@@ -3,7 +3,8 @@ export type ColumnUnit = 'minute' | '5minute' | 'hour' | 'day' | 'week' | 'month
 export type Aggregation = 'mean' | 'min' | 'max' | 'sum' | 'last' | 'change' | 'on_ratio';
 export type Source = 'auto' | 'statistics' | 'history';
 export type Orientation = 'horizontal' | 'vertical';
-export type PresetName = 'temperature' | 'humidity' | 'co2' | 'pm25' | 'traffic' | 'viridis' | 'mono';
+export type PresetName =
+  'temperature' | 'indoor_temperature' | 'humidity' | 'co2' | 'pm25' | 'traffic' | 'viridis' | 'mono';
 export type ScaleType = 'absolute' | 'relative';
 
 export interface ScaleStep {
@@ -72,6 +73,7 @@ export const COLUMN_UNITS: ColumnUnit[] = ['minute', '5minute', 'hour', 'day', '
 export const AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'sum', 'last', 'change', 'on_ratio'];
 export const PRESET_NAMES: PresetName[] = [
   'temperature',
+  'indoor_temperature',
   'humidity',
   'co2',
   'pm25',
@@ -80,7 +82,13 @@ export const PRESET_NAMES: PresetName[] = [
   'mono',
 ];
 /** Presets with fixed values in the entity's unit (the others spread over the data range). */
-export const ABSOLUTE_PRESETS: PresetName[] = ['temperature', 'humidity', 'co2', 'pm25'];
+export const ABSOLUTE_PRESETS: PresetName[] = [
+  'temperature',
+  'indoor_temperature',
+  'humidity',
+  'co2',
+  'pm25',
+];
 
 /** Allowed column units per row unit; the first entry is the default. */
 export const ALLOWED_COLUMNS: Record<RowUnit, ColumnUnit[]> = {

@@ -27,6 +27,24 @@ export const PRESETS: Record<PresetName, Preset> = {
       { value: 35, color: '#a50026' },
     ],
   },
+  // Indoor temperature: finer steps around the comfort zone (20–22 °C green), cold below 18 °C, hot above 26 °C.
+  // Even contrast per °C (no cliff around the comfort band, lightness rising from 20 °C on).
+  indoor_temperature: {
+    type: 'absolute',
+    units: ['°C', '°F'],
+    steps: [
+      { value: 14, color: '#313695' },
+      { value: 16, color: '#4575b4' },
+      { value: 18, color: '#74add1' },
+      { value: 19, color: '#abd9e9' },
+      { value: 20, color: '#66bd63' },
+      { value: 22, color: '#a6d96a' },
+      { value: 24, color: '#fee08b' },
+      { value: 25, color: '#fdae61' },
+      { value: 26, color: '#f46d43' },
+      { value: 28, color: '#a50026' },
+    ],
+  },
   // Relative humidity: dry (brown), comfortable 40–60 % (green), humid (blue).
   humidity: {
     type: 'absolute',
@@ -207,7 +225,7 @@ export function resolveScale(cfg: NormalizedScale, ctx: ScaleContext): ResolvedS
     // relative presets have positions, not values: they can only be spread over a range
     const type = preset.type === 'relative' ? 'relative' : (cfg.type ?? (unitFits ? 'absolute' : 'relative'));
     if (type === 'absolute') {
-      const fahrenheit = name === 'temperature' && ctx.unit === '°F';
+      const fahrenheit = preset.units?.[0] === '°C' && ctx.unit === '°F';
       stops = preset.steps.map((s) => ({ value: fahrenheit ? cToF(s.value) : s.value, color: s.color }));
     } else {
       const positions = preset.type === 'relative' ? preset.steps : toPositions(preset.steps);

@@ -13,6 +13,14 @@ export const GALLERY: GalleryItem[] = [
     config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · days × hours' },
   },
   {
+    id: 'day-hour-indoor-temperature',
+    config: {
+      entity: 'sensor.living_room_temperature',
+      title: 'Living room · indoor scale',
+      scale: { preset: 'indoor_temperature' },
+    },
+  },
+  {
     id: 'hour-5min-power',
     config: { entity: 'sensor.house_power', title: 'Power · hours × 5 min', row_unit: 'hour' },
   },

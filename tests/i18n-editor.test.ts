@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeConfig } from '../src/config';
+import { normalizeConfig, PRESET_NAMES } from '../src/config';
 import { formFieldNames, getConfigFormSchema, type FormSchemaItem } from '../src/editor';
 import { localize, resolveLanguage, TRANSLATIONS } from '../src/i18n';
 
@@ -128,6 +128,14 @@ describe('getConfigFormSchema', () => {
       }),
     ).toThrow();
     expect(() => form.assertConfig({ type: 'x', entity: 'sensor.a' })).not.toThrow();
+  });
+
+  it('labels every preset in every language', () => {
+    for (const lang of Object.keys(TRANSLATIONS)) {
+      for (const preset of PRESET_NAMES) {
+        expect(TRANSLATIONS[lang][`option.${preset}`], `${lang} ${preset}`).toBeTruthy();
+      }
+    }
   });
 
   it('localizes to German', () => {

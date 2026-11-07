@@ -37,6 +37,10 @@ Requires Home Assistant 2024.8 or newer (tested with the version in [`e2e-ha/com
 
 Until the card is listed there, add it as a custom repository first: ⋮ → _Custom repositories_ → this repository's URL, type **Dashboard**.
 
+After an update, dashboards that are already open (e.g. the companion app in the background) still run the old
+version. The card notices this and offers a **Reload** in a notification; reloading the page or restarting the app
+does the same.
+
 ### Manual
 
 1. Download `chrono-heatmap-card.js` from the latest [release](https://github.com/SanielDous/chrono-heatmap-card/releases).

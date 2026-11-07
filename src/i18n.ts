@@ -5,6 +5,8 @@ const en: Dict = {
   'card.description':
     'Shows the history of an entity as a heatmap with free choice of rows (hours, days, weeks, months, years).',
   'ui.no_data': 'No data',
+  'ui.update_available': 'Chrono Heatmap Card was updated. Reload to use the new version.',
+  'ui.reload': 'Reload',
   'ui.loading': 'Loading…',
   'ui.entity_not_found': 'Entity not available: {entity}',
   'ui.load_failed': 'Could not load data: {message}',
@@ -85,6 +87,9 @@ const de: Dict = {
   'card.description':
     'Zeigt den Verlauf einer Entität als Heatmap mit frei wählbaren Reihen (Stunden, Tage, Wochen, Monate, Jahre).',
   'ui.no_data': 'Keine Daten',
+  'ui.update_available':
+    'Chrono Heatmap Card wurde aktualisiert. Neu laden, um die neue Version zu verwenden.',
+  'ui.reload': 'Neu laden',
   'ui.loading': 'Lade…',
   'ui.entity_not_found': 'Entität nicht verfügbar: {entity}',
   'ui.load_failed': 'Daten konnten nicht geladen werden: {message}',
@@ -168,6 +173,9 @@ const fr: Dict = {
   'card.description':
     'Affiche l’historique d’une entité sous forme de carte thermique, avec des lignes au choix (heures, jours, semaines, mois, années).',
   'ui.no_data': 'Aucune donnée',
+  'ui.update_available':
+    'Chrono Heatmap Card a été mise à jour. Rechargez pour utiliser la nouvelle version.',
+  'ui.reload': 'Recharger',
   'ui.loading': 'Chargement…',
   'ui.entity_not_found': 'Entité non disponible : {entity}',
   'ui.load_failed': 'Impossible de charger les données : {message}',
@@ -251,6 +259,8 @@ const nl: Dict = {
   'card.description':
     'Toont de geschiedenis van een entiteit als heatmap met vrij te kiezen rijen (uren, dagen, weken, maanden, jaren).',
   'ui.no_data': 'Geen gegevens',
+  'ui.update_available': 'Chrono Heatmap Card is bijgewerkt. Herlaad om de nieuwe versie te gebruiken.',
+  'ui.reload': 'Herladen',
   'ui.loading': 'Laden…',
   'ui.entity_not_found': 'Entiteit niet beschikbaar: {entity}',
   'ui.load_failed': 'Kan gegevens niet laden: {message}',
@@ -332,6 +342,8 @@ const es: Dict = {
   'card.description':
     'Muestra el historial de una entidad como mapa de calor con filas a elegir (horas, días, semanas, meses, años).',
   'ui.no_data': 'Sin datos',
+  'ui.update_available': 'Chrono Heatmap Card se ha actualizado. Recarga para usar la nueva versión.',
+  'ui.reload': 'Recargar',
   'ui.loading': 'Cargando…',
   'ui.entity_not_found': 'Entidad no disponible: {entity}',
   'ui.load_failed': 'No se pudieron cargar los datos: {message}',
@@ -413,6 +425,8 @@ const it: Dict = {
   'card.description':
     'Mostra la cronologia di un’entità come mappa di calore con righe a scelta (ore, giorni, settimane, mesi, anni).',
   'ui.no_data': 'Nessun dato',
+  'ui.update_available': 'Chrono Heatmap Card è stata aggiornata. Ricarica per usare la nuova versione.',
+  'ui.reload': 'Ricarica',
   'ui.loading': 'Caricamento…',
   'ui.entity_not_found': 'Entità non disponibile: {entity}',
   'ui.load_failed': 'Impossibile caricare i dati: {message}',
@@ -494,6 +508,8 @@ const pl: Dict = {
   'card.description':
     'Pokazuje historię encji jako mapę cieplną z dowolnie wybieranymi wierszami (godziny, dni, tygodnie, miesiące, lata).',
   'ui.no_data': 'Brak danych',
+  'ui.update_available': 'Chrono Heatmap Card została zaktualizowana. Odśwież, aby użyć nowej wersji.',
+  'ui.reload': 'Odśwież',
   'ui.loading': 'Ładowanie…',
   'ui.entity_not_found': 'Encja niedostępna: {entity}',
   'ui.load_failed': 'Nie udało się wczytać danych: {message}',
@@ -575,6 +591,8 @@ const sv: Dict = {
   'card.description':
     'Visar historiken för en entitet som värmekarta med valfria rader (timmar, dagar, veckor, månader, år).',
   'ui.no_data': 'Inga data',
+  'ui.update_available': 'Chrono Heatmap Card har uppdaterats. Ladda om för att använda den nya versionen.',
+  'ui.reload': 'Ladda om',
   'ui.loading': 'Laddar…',
   'ui.entity_not_found': 'Entiteten är inte tillgänglig: {entity}',
   'ui.load_failed': 'Kunde inte läsa in data: {message}',

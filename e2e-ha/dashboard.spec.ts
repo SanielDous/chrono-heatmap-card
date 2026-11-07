@@ -137,3 +137,64 @@ test('card picker offers the card and its visual editor works', async ({ page })
   await page.screenshot({ path: `${OUT}/card-editor.png` });
   expect(cardErrors(errors)).toEqual([]);
 });
+
+test('offers a reload when the dashboard resource was updated meanwhile', async ({ page }) => {
+  const errors = watchErrors(page);
+  await openDashboard(page);
+  const toast = page.getByText('Chrono Heatmap Card was updated', { exact: false });
+  // unchanged resource: no toast
+  await page.waitForTimeout(2_000);
+  await expect(toast).toHaveCount(0);
+
+  type Resource = { id: string; url: string; type: string };
+  const callWS = <T>(msg: Record<string, unknown>) =>
+    page.evaluate(
+      (m) =>
+        (
+          document.querySelector('home-assistant') as unknown as {
+            hass: { callWS: (x: unknown) => Promise<unknown> };
+          }
+        ).hass.callWS(m),
+      msg,
+    ) as Promise<T>;
+  const resources = await callWS<Resource[]>({ type: 'lovelace/resources' });
+  const ours = resources.find((r) => r.url.includes('chrono-heatmap-card.js'))!;
+  expect(ours, 'dashboard resource of the card').toBeDefined();
+  try {
+    // what the Marketplace does on an update: same file, new cache-busting URL
+    await callWS({
+      type: 'lovelace/resources/update',
+      resource_id: ours.id,
+      url: `${ours.url.split('?')[0]}?v=e2e-next`,
+      res_type: 'module',
+    });
+    // the app comes back to the foreground (checks are at least 10 s apart)
+    await page.waitForTimeout(10_500);
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await expect(toast).toBeVisible();
+    await page.screenshot({ path: `${OUT}/update-toast.png` });
+
+    // the toast's button reloads the page, which then runs the new resource URL: no toast anymore
+    await page.getByRole('button', { name: 'Reload' }).click();
+    await page.waitForLoadState('load');
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          performance
+            .getEntriesByType('resource')
+            .some((e) => e.name.includes('chrono-heatmap-card.js?v=e2e-next')),
+        ),
+      )
+      .toBe(true);
+    await page.waitForTimeout(2_000);
+    await expect(toast).toHaveCount(0);
+  } finally {
+    await callWS({
+      type: 'lovelace/resources/update',
+      resource_id: ours.id,
+      url: ours.url,
+      res_type: 'module',
+    });
+  }
+  expect(cardErrors(errors)).toEqual([]);
+});

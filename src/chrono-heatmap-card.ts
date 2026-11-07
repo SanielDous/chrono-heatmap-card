@@ -15,6 +15,7 @@ import type { HassEntity, HomeAssistant } from './hass-types';
 import { localize } from './i18n';
 import { colorFor, legendGradient, resolveScale, type ResolvedScale } from './scale';
 import { STYLES } from './styles';
+import { trackUpdates } from './update-check';
 
 export const CARD_TAG = 'chrono-heatmap-card';
 const VERSION = typeof __CARD_VERSION__ === 'string' ? __CARD_VERSION__ : 'dev';
@@ -170,6 +171,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const first = !this._hass;
     const localeChanged = !first && hass.locale !== this._hass?.locale;
     this._hass = hass;
+    trackUpdates(hass, import.meta.url);
     const entity = this._config ? hass.states[this._config.entity] : undefined;
     const changed = entity !== this._lastEntity;
     this._lastEntity = entity;

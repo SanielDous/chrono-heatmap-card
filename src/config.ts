@@ -214,8 +214,15 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     scale: normalizeScale(config.scale),
     show_legend: config.show_legend ?? true,
     show_labels: config.show_labels ?? true,
-    newest_first: config.newest_first === true,
+    newest_first: bool(config.newest_first, 'newest_first') ?? false,
   };
+}
+
+function bool(value: unknown, key: string): boolean | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'boolean')
+    throw new ConfigError('error.invalid_option', { option: key, value: String(value) });
+  return value;
 }
 
 /** Choose the aggregation for an entity when not configured. */

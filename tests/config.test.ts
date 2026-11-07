@@ -28,6 +28,7 @@ describe('normalizeConfig', () => {
     expect(c.on_states).toBeUndefined();
     expect(c.show_legend).toBe(true);
     expect(c.show_labels).toBe(true);
+    expect(c.newest_first).toBe(false);
   });
 
   it('picks the default column unit per row unit', () => {
@@ -115,6 +116,14 @@ describe('normalizeConfig', () => {
     expect(normalizeConfig({ ...base, scale: { reverse: true } }).scale.reverse).toBe(true);
     expect(normalizeConfig({ ...base, scale: { reverse: false } }).scale.reverse).toBeUndefined();
     expect(errorKey(() => normalizeConfig({ ...base, scale: { reverse: 'yes' as never } }))).toBe(
+      'error.invalid_option',
+    );
+  });
+
+  it('validates newest_first', () => {
+    expect(normalizeConfig({ ...base, newest_first: true }).newest_first).toBe(true);
+    expect(normalizeConfig({ ...base, newest_first: false }).newest_first).toBe(false);
+    expect(errorKey(() => normalizeConfig({ ...base, newest_first: 'yes' as never }))).toBe(
       'error.invalid_option',
     );
   });

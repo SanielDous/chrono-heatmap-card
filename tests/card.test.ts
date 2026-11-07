@@ -64,11 +64,21 @@ describe('chrono-heatmap-card', () => {
       const rows = rects
         .filter((r) => Number(r.getAttribute(axis)) === min)
         .map((r) => r.getAttribute('data-r'));
+      // row labels: right-aligned on the left (horizontal) or centered on top (vertical)
+      const anchor = orientation === 'horizontal' ? 'end' : 'middle';
+      const labels = [...el.shadowRoot!.querySelectorAll(`text.label[text-anchor="${anchor}"]`)];
+      const first = labels.reduce((a, b) =>
+        Number(b.getAttribute(axis)) < Number(a.getAttribute(axis)) ? b : a,
+      );
       el.remove();
-      return [...new Set(rows)];
+      return { rows: [...new Set(rows)], label: first.textContent };
     };
-    expect(await firstRow(false)).toEqual(['0']);
-    expect(await firstRow(true)).toEqual(['2']);
+    const oldest = await firstRow(false);
+    const newest = await firstRow(true);
+    expect(oldest.rows).toEqual(['0']);
+    expect(newest.rows).toEqual(['2']);
+    expect(newest.label).not.toBe(oldest.label);
+    expect(newest.label).toMatch(/26/); // NOW is Mon 2026-10-26
   });
 
   it('renders on/off ratio for a binary sensor from history', async () => {

@@ -21,17 +21,21 @@ Swedish; the language follows your HA profile, other languages fall back to Engl
 **[▶ Try the interactive demo](https://sanieldous.github.io/chrono-heatmap-card/)** with mock data, no installation needed.
 
 <p>
-  <img src="docs/images/month-day-temperature.png" alt="Months × days temperature heatmap" width="480">
-  <img src="docs/images/day-hour-door-dark.png" alt="Days × hours share of time a door was open, dark theme, German" width="480">
-  <img src="docs/images/hour-5min-power.png" alt="Hours × 5 minutes power heatmap" width="480">
+  <img src="https://raw.githubusercontent.com/SanielDous/chrono-heatmap-card/main/docs/images/month-day-temperature.png" alt="Months × days temperature heatmap" width="480">
+  <img src="https://raw.githubusercontent.com/SanielDous/chrono-heatmap-card/main/docs/images/day-hour-door-dark.png" alt="Days × hours share of time a door was open, dark theme, German" width="480">
+  <img src="https://raw.githubusercontent.com/SanielDous/chrono-heatmap-card/main/docs/images/hour-5min-power.png" alt="Hours × 5 minutes power heatmap" width="480">
 </p>
 
 ## Installation
 
-### HACS (custom repository)
+Requires Home Assistant 2024.8 or newer (tested with the version in [`e2e-ha/compose.yaml`](e2e-ha/compose.yaml)).
 
-1. HACS → ⋮ → _Custom repositories_ → add this repository's URL, type **Dashboard**.
-2. Install **Chrono Heatmap Card**, reload the browser.
+### Marketplace / HACS
+
+1. Open the Marketplace (HACS) and search for **Chrono Heatmap Card**.
+2. Install it and reload the browser. The dashboard resource is added automatically.
+
+Until the card is listed there, add it as a custom repository first: ⋮ → _Custom repositories_ → this repository's URL, type **Dashboard**.
 
 ### Manual
 

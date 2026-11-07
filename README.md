@@ -55,7 +55,7 @@ All options (also available in the visual editor, except `scale.steps`):
 | `title`           | entity name                                                                                            | Card title; click opens the more-info dialog                                                                                     |
 | `row_unit`        | `day`                                                                                                  | `hour` · `day` · `week` · `month` · `year`                                                                                       |
 | `column_unit`     | depends on `row_unit`                                                                                  | see table above                                                                                                                  |
-| `rows`            | hour 12, day 14, week 8, month 6, year 2                                                               | Number of rows; the last row is the current period                                                                               |
+| `rows`            | hour 12, day 14, week 8, month 6, year 2                                                               | Number of rows; the current period is the last row (first with `newest_first`)                                                   |
 | `orientation`     | `horizontal`                                                                                           | `vertical` swaps rows and columns                                                                                                |
 | `source`          | `auto`                                                                                                 | `auto` · `statistics` · `history`                                                                                                |
 | `aggregation`     | auto                                                                                                   | `mean` · `min` · `max` · `sum` · `last` · `change` · `on_ratio` (auto: meters → `change`, numeric → `mean`, others → `on_ratio`) |
@@ -67,6 +67,7 @@ All options (also available in the visual editor, except `scale.steps`):
 | `scale.steps`     | –                                                                                                      | Custom color steps (`value`, `color`) – YAML only                                                                                |
 | `show_legend`     | `true`                                                                                                 |                                                                                                                                  |
 | `show_labels`     | `true`                                                                                                 |                                                                                                                                  |
+| `newest_first`    | `false`                                                                                                | `true` puts the current period at the top (vertical: left) instead of the bottom (right)                                         |
 
 Example with custom steps:
 

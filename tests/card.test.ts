@@ -52,6 +52,35 @@ describe('chrono-heatmap-card', () => {
     expect(colored.length).toBeGreaterThan(300);
   });
 
+  it.each([
+    ['horizontal', 'y'],
+    ['vertical', 'x'],
+  ] as const)('newest_first puts the current period first (%s)', async (orientation, axis) => {
+    const firstRow = async (newest_first: boolean) => {
+      const el = makeCard({ entity: 'sensor.outdoor_temperature', rows: 3, orientation, newest_first });
+      await settle(el);
+      const rects = [...el.shadowRoot!.querySelectorAll('rect.cell')];
+      const min = Math.min(...rects.map((r) => Number(r.getAttribute(axis))));
+      const rows = rects
+        .filter((r) => Number(r.getAttribute(axis)) === min)
+        .map((r) => r.getAttribute('data-r'));
+      // row labels: right-aligned on the left (horizontal) or centered on top (vertical)
+      const anchor = orientation === 'horizontal' ? 'end' : 'middle';
+      const labels = [...el.shadowRoot!.querySelectorAll(`text.label[text-anchor="${anchor}"]`)];
+      const first = labels.reduce((a, b) =>
+        Number(b.getAttribute(axis)) < Number(a.getAttribute(axis)) ? b : a,
+      );
+      el.remove();
+      return { rows: [...new Set(rows)], label: first.textContent };
+    };
+    const oldest = await firstRow(false);
+    const newest = await firstRow(true);
+    expect(oldest.rows).toEqual(['0']);
+    expect(newest.rows).toEqual(['2']);
+    expect(newest.label).not.toBe(oldest.label);
+    expect(newest.label).toMatch(/26/); // NOW is Mon 2026-10-26
+  });
+
   it('renders on/off ratio for a binary sensor from history', async () => {
     const el = makeCard({ entity: 'binary_sensor.front_door', rows: 3 });
     await settle(el);

@@ -78,7 +78,7 @@ describe('getConfigFormSchema', () => {
       items.flatMap((i) => (i.schema ? flat(i.schema) : [i]));
     const items = flat(form.schema);
     const normalized = normalizeConfig({ type: 'x', entity: 'sensor.a' });
-    for (const key of ['show_legend', 'show_labels'] as const) {
+    for (const key of ['show_legend', 'show_labels', 'newest_first'] as const) {
       expect(items.find((i) => i.name === key)?.default).toBe(normalized[key]);
     }
   });
@@ -89,6 +89,7 @@ describe('getConfigFormSchema', () => {
         'aggregation',
         'column_unit',
         'entity',
+        'newest_first',
         'on_states',
         'orientation',
         'row_unit',

@@ -84,6 +84,7 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
       schema: [
         { name: 'show_legend', selector: { boolean: {} }, default: true },
         { name: 'show_labels', selector: { boolean: {} }, default: true },
+        { name: 'newest_first', selector: { boolean: {} }, default: false },
       ],
     },
   ];

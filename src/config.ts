@@ -35,6 +35,7 @@ export interface CardConfig {
   scale?: ScaleConfig;
   show_legend?: boolean;
   show_labels?: boolean;
+  newest_first?: boolean;
 }
 
 export interface NormalizedScale {
@@ -62,6 +63,8 @@ export interface NormalizedConfig {
   scale: NormalizedScale;
   show_legend: boolean;
   show_labels: boolean;
+  /** Newest row at the top (left when vertical) instead of the bottom (right). */
+  newest_first: boolean;
 }
 
 export const ROW_UNITS: RowUnit[] = ['hour', 'day', 'week', 'month', 'year'];
@@ -211,7 +214,15 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     scale: normalizeScale(config.scale),
     show_legend: config.show_legend ?? true,
     show_labels: config.show_labels ?? true,
+    newest_first: bool(config.newest_first, 'newest_first') ?? false,
   };
+}
+
+function bool(value: unknown, key: string): boolean | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'boolean')
+    throw new ConfigError('error.invalid_option', { option: key, value: String(value) });
+  return value;
 }
 
 /** Choose the aggregation for an entity when not configured. */

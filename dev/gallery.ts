@@ -79,6 +79,15 @@ export const GALLERY: GalleryItem[] = [
     config: { entity: 'binary_sensor.front_door', title: 'Front door · share open', rows: 10 },
   },
   {
+    id: 'day-hour-door-newest-first',
+    config: {
+      entity: 'binary_sensor.front_door',
+      title: 'Front door · newest first',
+      rows: 10,
+      newest_first: true,
+    },
+  },
+  {
     id: 'vertical-co2',
     config: {
       entity: 'sensor.office_co2',

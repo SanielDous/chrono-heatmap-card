@@ -35,6 +35,7 @@ export interface CardConfig {
   scale?: ScaleConfig;
   show_legend?: boolean;
   show_labels?: boolean;
+  newest_first?: boolean;
 }
 
 export interface NormalizedScale {
@@ -62,6 +63,8 @@ export interface NormalizedConfig {
   scale: NormalizedScale;
   show_legend: boolean;
   show_labels: boolean;
+  /** Newest row at the top (left when vertical) instead of the bottom (right). */
+  newest_first: boolean;
 }
 
 export const ROW_UNITS: RowUnit[] = ['hour', 'day', 'week', 'month', 'year'];
@@ -211,6 +214,7 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     scale: normalizeScale(config.scale),
     show_legend: config.show_legend ?? true,
     show_labels: config.show_labels ?? true,
+    newest_first: config.newest_first === true,
   };
 }
 

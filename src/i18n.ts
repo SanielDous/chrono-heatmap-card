@@ -47,6 +47,7 @@ const en: Dict = {
   'editor.reverse': 'Reverse colors',
   'editor.show_legend': 'Show legend',
   'editor.show_labels': 'Show labels',
+  'editor.newest_first': 'Newest first',
 
   'unit.hour': 'Hours',
   'unit.day': 'Days',
@@ -128,6 +129,7 @@ const de: Dict = {
   'editor.reverse': 'Farben umkehren',
   'editor.show_legend': 'Legende anzeigen',
   'editor.show_labels': 'Beschriftung anzeigen',
+  'editor.newest_first': 'Neueste zuerst',
 
   'unit.hour': 'Stunden',
   'unit.day': 'Tage',
@@ -211,6 +213,7 @@ const fr: Dict = {
   'editor.reverse': 'Inverser les couleurs',
   'editor.show_legend': 'Afficher la légende',
   'editor.show_labels': 'Afficher les libellés',
+  'editor.newest_first': 'Plus récent en premier',
 
   'unit.hour': 'Heures',
   'unit.day': 'Jours',
@@ -291,6 +294,7 @@ const nl: Dict = {
   'editor.reverse': 'Kleuren omkeren',
   'editor.show_legend': 'Legenda weergeven',
   'editor.show_labels': 'Labels weergeven',
+  'editor.newest_first': 'Nieuwste eerst',
 
   'unit.hour': 'Uren',
   'unit.day': 'Dagen',
@@ -371,6 +375,7 @@ const es: Dict = {
   'editor.reverse': 'Invertir colores',
   'editor.show_legend': 'Mostrar leyenda',
   'editor.show_labels': 'Mostrar etiquetas',
+  'editor.newest_first': 'Más reciente primero',
 
   'unit.hour': 'Horas',
   'unit.day': 'Días',
@@ -451,6 +456,7 @@ const it: Dict = {
   'editor.reverse': 'Inverti colori',
   'editor.show_legend': 'Mostra legenda',
   'editor.show_labels': 'Mostra etichette',
+  'editor.newest_first': 'Più recenti prima',
 
   'unit.hour': 'Ore',
   'unit.day': 'Giorni',
@@ -531,6 +537,7 @@ const pl: Dict = {
   'editor.reverse': 'Odwróć kolory',
   'editor.show_legend': 'Pokaż legendę',
   'editor.show_labels': 'Pokaż etykiety',
+  'editor.newest_first': 'Najnowsze najpierw',
 
   'unit.hour': 'Godziny',
   'unit.day': 'Dni',
@@ -611,6 +618,7 @@ const sv: Dict = {
   'editor.reverse': 'Invertera färger',
   'editor.show_legend': 'Visa teckenförklaring',
   'editor.show_labels': 'Visa etiketter',
+  'editor.newest_first': 'Senaste först',
 
   'unit.hour': 'Timmar',
   'unit.day': 'Dagar',

@@ -52,6 +52,25 @@ describe('chrono-heatmap-card', () => {
     expect(colored.length).toBeGreaterThan(300);
   });
 
+  it.each([
+    ['horizontal', 'y'],
+    ['vertical', 'x'],
+  ] as const)('newest_first puts the current period first (%s)', async (orientation, axis) => {
+    const firstRow = async (newest_first: boolean) => {
+      const el = makeCard({ entity: 'sensor.outdoor_temperature', rows: 3, orientation, newest_first });
+      await settle(el);
+      const rects = [...el.shadowRoot!.querySelectorAll('rect.cell')];
+      const min = Math.min(...rects.map((r) => Number(r.getAttribute(axis))));
+      const rows = rects
+        .filter((r) => Number(r.getAttribute(axis)) === min)
+        .map((r) => r.getAttribute('data-r'));
+      el.remove();
+      return [...new Set(rows)];
+    };
+    expect(await firstRow(false)).toEqual(['0']);
+    expect(await firstRow(true)).toEqual(['2']);
+  });
+
   it('renders on/off ratio for a binary sensor from history', async () => {
     const el = makeCard({ entity: 'binary_sensor.front_door', rows: 3 });
     await settle(el);

@@ -447,6 +447,9 @@ export class ChronoHeatmapCard extends HTMLElement {
     const r = (n: number) => Math.round(n * 100) / 100;
     const rx = r(Math.min(2, L.cellW / 4));
     const parts: string[] = [];
+    // display position of a row: oldest first (default) or newest first
+    const last = grid.rows.length - 1;
+    const pos = (ri: number) => (cfg.newest_first ? last - ri : ri);
 
     if (cfg.show_labels) {
       const lang = this._lang;
@@ -457,12 +460,12 @@ export class ChronoHeatmapCard extends HTMLElement {
       const needed = L.vertical ? Math.max(...rowLabels.map((t) => t.length)) * 6 + 6 : 12;
       const rowStep = Math.max(1, Math.ceil(needed / (L.vertical ? pitchX : pitchY)));
       grid.rows.forEach((_row, ri) => {
-        if ((grid.rows.length - 1 - ri) % rowStep !== 0) return;
+        if ((last - ri) % rowStep !== 0) return;
         const text = esc(rowLabels[ri]);
         parts.push(
           L.vertical
-            ? `<text class="label" x="${r(L.labelLeft + ri * pitchX + L.cellW / 2)}" y="${L.labelTop - 4}" text-anchor="middle">${text}</text>`
-            : `<text class="label" x="${L.labelLeft - 6}" y="${r(L.labelTop + ri * pitchY + L.cellH / 2)}" text-anchor="end" dominant-baseline="central">${text}</text>`,
+            ? `<text class="label" x="${r(L.labelLeft + pos(ri) * pitchX + L.cellW / 2)}" y="${L.labelTop - 4}" text-anchor="middle">${text}</text>`
+            : `<text class="label" x="${L.labelLeft - 6}" y="${r(L.labelTop + pos(ri) * pitchY + L.cellH / 2)}" text-anchor="end" dominant-baseline="central">${text}</text>`,
         );
       });
       const spacing = L.vertical ? 12 / pitchY : columnLabelWidth(cfg.column_unit, cfg.row_unit) / pitchX;
@@ -483,8 +486,8 @@ export class ChronoHeatmapCard extends HTMLElement {
       row.cells.forEach((cell, ci) => {
         if (!cell) return;
         const v = values[ri]?.[ci] ?? null;
-        const x = L.labelLeft + (L.vertical ? ri : ci) * pitchX;
-        const y = L.labelTop + (L.vertical ? ci : ri) * pitchY;
+        const x = L.labelLeft + (L.vertical ? pos(ri) : ci) * pitchX;
+        const y = L.labelTop + (L.vertical ? ci : pos(ri)) * pitchY;
         const cls = v === null ? (cell.start > now ? 'cell future' : 'cell empty') : 'cell';
         const style = v === null ? '' : ` style="fill:${esc(colorFor(scale, v))}"`;
         parts.push(

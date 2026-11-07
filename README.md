@@ -67,6 +67,7 @@ All options (also available in the visual editor, except `scale.steps`):
 | `scale.steps`     | –                                                                                                      | Custom color steps (`value`, `color`) – YAML only                                                                                |
 | `show_legend`     | `true`                                                                                                 |                                                                                                                                  |
 | `show_labels`     | `true`                                                                                                 |                                                                                                                                  |
+| `newest_first`    | `false`                                                                                                | `true` puts the current period at the top (vertical: left) instead of the bottom (right)                                         |
 
 Example with custom steps:
 

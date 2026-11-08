@@ -12,7 +12,7 @@ const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
 
 export const PRESETS: Record<PresetName, Preset> = {
   // Outdoor temperature: one hue band per 5 °C (indigo, blue, cyan, green, yellow, orange, red, crimson, violet)
-  // with about even perceptual contrast (OKLab) per °C from -15 to 40 °C; freezing is at the blue/cyan border.
+  // with about even perceptual contrast (OKLab) per °C from -15 to 40 °C; 0 °C is blue, cyan starts at 5 °C.
   temperature: {
     type: 'absolute',
     units: ['°C', '°F'],
@@ -23,12 +23,12 @@ export const PRESETS: Record<PresetName, Preset> = {
       { value: 0, color: '#2f8ad6' },
       { value: 5, color: '#2ec0c8' },
       { value: 10, color: '#5ccf6a' },
-      { value: 15, color: '#c2dc3c' },
-      { value: 20, color: '#f6d443' },
+      { value: 15, color: '#b8d93a' },
+      { value: 20, color: '#fde24f' },
       { value: 25, color: '#f8983a' },
       { value: 30, color: '#e2442f' },
       { value: 35, color: '#a8164f' },
-      { value: 40, color: '#6b1d8a' },
+      { value: 40, color: '#7a1a72' },
     ],
   },
   // Indoor temperature: the same hues, packed into 14–28 °C with one hue per °C between 19 and 23 °C, where rooms
@@ -42,12 +42,12 @@ export const PRESETS: Record<PresetName, Preset> = {
       { value: 17.5, color: '#2f8ad6' },
       { value: 19, color: '#2ec0c8' },
       { value: 20, color: '#5ccf6a' },
-      { value: 21, color: '#c2dc3c' },
-      { value: 22, color: '#f6d443' },
+      { value: 21, color: '#b8d93a' },
+      { value: 22, color: '#fde24f' },
       { value: 23, color: '#f8983a' },
       { value: 24.5, color: '#e2442f' },
       { value: 26, color: '#a8164f' },
-      { value: 28, color: '#6b1d8a' },
+      { value: 28, color: '#7a1a72' },
     ],
   },
   // Relative humidity: dry (brown, orange), comfortable 40–60 % (yellow-green, green, cyan), humid (blue).

@@ -101,12 +101,14 @@ Notes:
   while the recorder still has it.
 - `change` follows HA: for `total_increasing` meters a drop of more than 10 % is a meter reset, smaller drops count
   as negative change; `total` meters (e.g. net import/export) may go down.
-- Automatic color scales by device class (only for mean/min/max/last): `temperature` (°C/°F), `humidity` (%,
-  green at 40–60 %), `co2` (ppm, green below 800, red above 1400), `pm25` (µg/m³, European Air Quality Index
+- Automatic color scales by device class (only for mean/min/max/last): `temperature` (°C/°F, -15 to 40 °C, a new
+  hue every 5 °C from indigo over blue, cyan, green, yellow, orange and red to violet), `humidity` (%, yellow-green
+  to cyan at 40–60 %), `co2` (ppm, green below 800, red above 1400), `pm25` (µg/m³, European Air Quality Index
   bands), battery as reversed `traffic` from 0 to 100 %. With an unexpected unit the preset is spread over the
   data range instead. Choosing a preset yourself (e.g. `traffic` for a battery) uses it as is, without the
   automatic reverse and range.
-- `indoor_temperature` (°C/°F) has finer steps between 14 and 28 °C (green at 20–22 °C) for rooms, where the
+- `indoor_temperature` (°C/°F) uses the same hues between 14 and 28 °C, one per °C from 19 to 23 °C (cyan, green,
+  yellow-green, yellow, orange), for rooms, where the
   outdoor-oriented `temperature` scale shows little contrast. Device classes can't tell indoor from outdoor, so
   choose it yourself (`scale.preset: indoor_temperature`).
 - `sum` adds up the per-period means (e.g. hourly averages of a power sensor); for meters use `change`.

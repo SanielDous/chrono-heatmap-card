@@ -11,52 +11,58 @@ interface Preset {
 const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
 
 export const PRESETS: Record<PresetName, Preset> = {
+  // Outdoor temperature: one hue band per 5 °C (indigo, blue, cyan, green, yellow, orange, red, crimson, violet)
+  // with about even perceptual contrast (OKLab) per °C from -15 to 40 °C; freezing is at the blue/cyan border.
   temperature: {
     type: 'absolute',
     units: ['°C', '°F'],
     steps: [
-      { value: -10, color: '#313695' },
-      { value: 0, color: '#4575b4' },
-      { value: 10, color: '#74add1' },
-      { value: 16, color: '#abd9e9' },
-      { value: 19, color: '#66bd63' },
-      { value: 22, color: '#d9ef8b' },
-      { value: 25, color: '#fee08b' },
-      { value: 28, color: '#fdae61' },
-      { value: 31, color: '#f46d43' },
-      { value: 35, color: '#a50026' },
+      { value: -15, color: '#3a1c71' },
+      { value: -10, color: '#30349a' },
+      { value: -5, color: '#2f5fc0' },
+      { value: 0, color: '#2f8ad6' },
+      { value: 5, color: '#2ec0c8' },
+      { value: 10, color: '#5ccf6a' },
+      { value: 15, color: '#c2dc3c' },
+      { value: 20, color: '#f6d443' },
+      { value: 25, color: '#f8983a' },
+      { value: 30, color: '#e2442f' },
+      { value: 35, color: '#a8164f' },
+      { value: 40, color: '#6b1d8a' },
     ],
   },
-  // Indoor temperature: finer steps around the comfort zone (20–22 °C green), cold below 18 °C, hot above 26 °C.
-  // Even contrast per °C (no cliff around the comfort band, lightness rising from 20 °C on).
+  // Indoor temperature: the same hues, packed into 14–28 °C with one hue per °C between 19 and 23 °C, where rooms
+  // usually are (cyan 19, green 20, yellow-green 21, yellow 22, orange 23), red from 24.5 °C, violet at 28 °C.
   indoor_temperature: {
     type: 'absolute',
     units: ['°C', '°F'],
     steps: [
-      { value: 14, color: '#313695' },
-      { value: 16, color: '#4575b4' },
-      { value: 18, color: '#74add1' },
-      { value: 19, color: '#abd9e9' },
-      { value: 20, color: '#66bd63' },
-      { value: 22, color: '#a6d96a' },
-      { value: 24, color: '#fee08b' },
-      { value: 25, color: '#fdae61' },
-      { value: 26, color: '#f46d43' },
-      { value: 28, color: '#a50026' },
+      { value: 14, color: '#30349a' },
+      { value: 16, color: '#2f5fc0' },
+      { value: 17.5, color: '#2f8ad6' },
+      { value: 19, color: '#2ec0c8' },
+      { value: 20, color: '#5ccf6a' },
+      { value: 21, color: '#c2dc3c' },
+      { value: 22, color: '#f6d443' },
+      { value: 23, color: '#f8983a' },
+      { value: 24.5, color: '#e2442f' },
+      { value: 26, color: '#a8164f' },
+      { value: 28, color: '#6b1d8a' },
     ],
   },
-  // Relative humidity: dry (brown), comfortable 40–60 % (green), humid (blue).
+  // Relative humidity: dry (brown, orange), comfortable 40–60 % (yellow-green, green, cyan), humid (blue).
+  // Each color appears once, so every value has its own color.
   humidity: {
     type: 'absolute',
     units: ['%'],
     steps: [
       { value: 20, color: '#b35806' },
       { value: 30, color: '#f1a340' },
-      { value: 40, color: '#91cf60' },
-      { value: 50, color: '#1a9850' },
-      { value: 60, color: '#91cf60' },
-      { value: 70, color: '#67a9cf' },
-      { value: 85, color: '#2166ac' },
+      { value: 40, color: '#d8de4c' },
+      { value: 50, color: '#4cbf68' },
+      { value: 60, color: '#2ab0c4' },
+      { value: 70, color: '#3a7cd0' },
+      { value: 85, color: '#2f3591' },
     ],
   },
   // Indoor CO2: outdoor air is about 400 ppm, ventilate above about 1000 ppm, poor above 1400 ppm.

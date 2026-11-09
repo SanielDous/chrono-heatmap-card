@@ -11,43 +11,43 @@ interface Preset {
 const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
 
 export const PRESETS: Record<PresetName, Preset> = {
-  // Outdoor temperature: one hue band per 5 °C (indigo, blue, cyan, green, yellow, orange, red, crimson, violet)
-  // with about even perceptual contrast (OKLab) per °C from -15 to 40 °C; 0 °C is blue, cyan starts at 5 °C.
+  // Outdoor temperature: a new hue every 4 °C from -10 to 35 °C (indigo, blue, sky, cyan, green, yellow-green,
+  // yellow, orange, red, crimson, violet) with about even perceptual contrast (OKLab) per °C.
   temperature: {
     type: 'absolute',
     units: ['°C', '°F'],
     steps: [
-      { value: -15, color: '#3a1c71' },
-      { value: -10, color: '#30349a' },
-      { value: -5, color: '#2f5fc0' },
-      { value: 0, color: '#2f8ad6' },
-      { value: 5, color: '#2ec0c8' },
+      { value: -10, color: '#3a1c71' },
+      { value: -6, color: '#30349a' },
+      { value: -2, color: '#2f5fc0' },
+      { value: 2, color: '#2f8ad6' },
+      { value: 6, color: '#2ec0c8' },
       { value: 10, color: '#5ccf6a' },
-      { value: 15, color: '#b8d93a' },
-      { value: 20, color: '#fde24f' },
-      { value: 25, color: '#f8983a' },
-      { value: 30, color: '#e2442f' },
-      { value: 35, color: '#a8164f' },
-      { value: 40, color: '#7a1a72' },
+      { value: 14, color: '#b8d93a' },
+      { value: 18, color: '#fde24f' },
+      { value: 22, color: '#f8983a' },
+      { value: 26, color: '#e2442f' },
+      { value: 30, color: '#a8164f' },
+      { value: 35, color: '#7b1fa2' },
     ],
   },
-  // Indoor temperature: the same hues, packed into 14–28 °C with one hue per °C between 19 and 23 °C, where rooms
-  // usually are (cyan 19, green 20, yellow-green 21, yellow 22, orange 23), red from 24.5 °C, violet at 28 °C.
+  // Indoor temperature: the same hues between 14 and 28 °C, green at the ideal 21 °C so deviations stand out; one hue
+  // per °C from 21 to 25 °C (green, yellow-green, yellow, orange, red) and per 1.5 °C below, violet at 28 °C.
   indoor_temperature: {
     type: 'absolute',
     units: ['°C', '°F'],
     steps: [
       { value: 14, color: '#30349a' },
-      { value: 16, color: '#2f5fc0' },
-      { value: 17.5, color: '#2f8ad6' },
-      { value: 19, color: '#2ec0c8' },
-      { value: 20, color: '#5ccf6a' },
-      { value: 21, color: '#b8d93a' },
-      { value: 22, color: '#fde24f' },
-      { value: 23, color: '#f8983a' },
-      { value: 24.5, color: '#e2442f' },
-      { value: 26, color: '#a8164f' },
-      { value: 28, color: '#7a1a72' },
+      { value: 16.5, color: '#2f5fc0' },
+      { value: 18, color: '#2f8ad6' },
+      { value: 19.5, color: '#2ec0c8' },
+      { value: 21, color: '#5ccf6a' },
+      { value: 22, color: '#b8d93a' },
+      { value: 23, color: '#fde24f' },
+      { value: 24, color: '#f8983a' },
+      { value: 25, color: '#e2442f' },
+      { value: 26.5, color: '#a8164f' },
+      { value: 28, color: '#7b1fa2' },
     ],
   },
   // Relative humidity: dry (brown, orange), comfortable 40–60 % (yellow-green, green, cyan), humid (blue).

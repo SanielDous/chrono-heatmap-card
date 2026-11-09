@@ -12,10 +12,10 @@ describe('resolveScale', () => {
 
   it('converts the temperature preset to °F', () => {
     const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: '°F' });
-    const idx = PRESETS.temperature.steps.findIndex((x) => x.value === 20);
-    expect(s.stops[idx].value).toBeCloseTo(68);
-    expect(s.min).toBe(5);
-    expect(s.max).toBe(104);
+    const idx = PRESETS.temperature.steps.findIndex((x) => x.value === 18);
+    expect(s.stops[idx].value).toBeCloseTo(64.4);
+    expect(s.min).toBe(14);
+    expect(s.max).toBe(95);
   });
 
   it('uses the indoor temperature preset as is when chosen, also in °F', () => {
@@ -161,7 +161,7 @@ describe('device class presets', () => {
 
   it('keeps an explicitly chosen absolute preset absolute, whatever the unit', () => {
     const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: 'C', values: [18, 24] });
-    expect([s.min, s.max]).toEqual([-15, 40]);
+    expect([s.min, s.max]).toEqual([-10, 35]);
   });
 
   it('never uses relative preset positions as absolute values', () => {

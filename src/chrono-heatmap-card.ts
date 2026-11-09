@@ -5,6 +5,7 @@ import {
   normalizeConfig,
   type Aggregation,
   type CardConfig,
+  type CellSpacing,
   type NormalizedConfig,
 } from './config';
 import { hasStatistics, isNumericEntity, loadBuckets, type LoadResult, type ValueMode } from './data';
@@ -38,6 +39,7 @@ interface Layout {
   cellW: number;
   cellH: number;
   gap: number;
+  spacing: CellSpacing;
   labelLeft: number;
   labelTop: number;
   vertical: boolean;
@@ -431,11 +433,23 @@ export class ChronoHeatmapCard extends HTMLElement {
     const labelLeft = labels ? (vertical ? 34 : rowLabelWidth(cfg.row_unit)) : 0;
     const labelTop = labels ? 16 : 0;
     const raw = (width - labelLeft) / nAcross;
-    const gap = raw >= 8 ? 2 : raw >= 4 ? 1 : 0;
+    // normal: 2 px between cells (1 px for small cells); small: 1 px; none: cells touch
+    const gap =
+      cfg.cell_spacing === 'none'
+        ? 0
+        : cfg.cell_spacing === 'small'
+          ? raw >= 4
+            ? 1
+            : 0
+          : raw >= 8
+            ? 2
+            : raw >= 4
+              ? 1
+              : 0;
     const cellW = raw - gap;
     const cellH = Math.min(Math.max(cellW, vertical ? 6 : 10), 28);
     const height = labelTop + nDown * (cellH + gap);
-    return { width, height, cellW, cellH, gap, labelLeft, labelTop, vertical };
+    return { width, height, cellW, cellH, gap, labelLeft, labelTop, vertical, spacing: cfg.cell_spacing };
   }
 
   private _gridSvg(
@@ -449,7 +463,8 @@ export class ChronoHeatmapCard extends HTMLElement {
     const pitchX = L.cellW + L.gap;
     const pitchY = L.cellH + L.gap;
     const r = (n: number) => Math.round(n * 100) / 100;
-    const rx = r(Math.min(2, L.cellW / 4));
+    // corners shrink with the spacing; touching cells are square so they form one surface
+    const rx = L.spacing === 'none' ? 0 : r(Math.min(L.spacing === 'small' ? 1 : 2, L.cellW / 4));
     const parts: string[] = [];
     // display position of a row: oldest first (default) or newest first
     const last = grid.rows.length - 1;

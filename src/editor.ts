@@ -1,4 +1,12 @@
-import { AGGREGATIONS, COLUMN_UNITS, MAX_ROWS, PRESET_NAMES, ROW_UNITS, type CardConfig } from './config';
+import {
+  AGGREGATIONS,
+  CELL_SPACINGS,
+  COLUMN_UNITS,
+  MAX_ROWS,
+  PRESET_NAMES,
+  ROW_UNITS,
+  type CardConfig,
+} from './config';
 import { localize } from './i18n';
 
 /* Schema format of HA's `getConfigForm()` (ha-form). Kept loose on purpose: HA owns this format. */
@@ -48,6 +56,7 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
         { name: 'column_unit', selector: select(COLUMN_UNITS, 'unit') },
         { name: 'rows', selector: { number: { min: 1, max: MAX_ROWS, mode: 'box' } } },
         { name: 'orientation', selector: select(['horizontal', 'vertical'], 'option') },
+        { name: 'cell_spacing', selector: select(CELL_SPACINGS, 'spacing') },
       ],
     },
     {

@@ -21,6 +21,14 @@ export const GALLERY: GalleryItem[] = [
     },
   },
   {
+    id: 'day-hour-temperature-small-spacing',
+    config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · small spacing', cell_spacing: 'small' },
+  },
+  {
+    id: 'day-hour-temperature-no-spacing',
+    config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · no spacing', cell_spacing: 'none' },
+  },
+  {
     id: 'hour-5min-power',
     config: { entity: 'sensor.house_power', title: 'Power · hours × 5 min', row_unit: 'hour' },
   },

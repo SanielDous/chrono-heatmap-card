@@ -87,6 +87,7 @@ describe('getConfigFormSchema', () => {
     expect(formFieldNames(form.schema).sort()).toEqual(
       [
         'aggregation',
+        'cell_spacing',
         'column_unit',
         'entity',
         'newest_first',

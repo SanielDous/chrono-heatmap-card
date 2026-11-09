@@ -3,6 +3,7 @@ export type ColumnUnit = 'minute' | '5minute' | 'hour' | 'day' | 'week' | 'month
 export type Aggregation = 'mean' | 'min' | 'max' | 'sum' | 'last' | 'change' | 'on_ratio';
 export type Source = 'auto' | 'statistics' | 'history';
 export type Orientation = 'horizontal' | 'vertical';
+export type CellSpacing = 'normal' | 'small' | 'none';
 export type PresetName =
   | 'temperature'
   | 'temperature_cold'
@@ -39,6 +40,7 @@ export interface CardConfig {
   column_unit?: ColumnUnit;
   rows?: number;
   orientation?: Orientation;
+  cell_spacing?: CellSpacing;
   source?: Source;
   aggregation?: Aggregation;
   on_states?: string[];
@@ -65,6 +67,7 @@ export interface NormalizedConfig {
   column_unit: ColumnUnit;
   rows: number;
   orientation: Orientation;
+  cell_spacing: CellSpacing;
   source: Source;
   /** undefined = choose from entity (state_class / numeric) */
   aggregation?: Aggregation;
@@ -80,6 +83,7 @@ export interface NormalizedConfig {
 export const ROW_UNITS: RowUnit[] = ['hour', 'day', 'week', 'month', 'year'];
 export const COLUMN_UNITS: ColumnUnit[] = ['minute', '5minute', 'hour', 'day', 'week', 'month'];
 export const AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'sum', 'last', 'change', 'on_ratio'];
+export const CELL_SPACINGS: CellSpacing[] = ['normal', 'small', 'none'];
 export const PRESET_NAMES: PresetName[] = [
   'temperature',
   'temperature_cold',
@@ -229,6 +233,7 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     rows,
     orientation:
       oneOf(config.orientation, ['horizontal', 'vertical'] as const, 'orientation') ?? 'horizontal',
+    cell_spacing: oneOf(config.cell_spacing, CELL_SPACINGS, 'cell_spacing') ?? 'normal',
     source: oneOf(config.source, ['auto', 'statistics', 'history'] as const, 'source') ?? 'auto',
     aggregation: oneOf(config.aggregation, AGGREGATIONS, 'aggregation'),
     on_states,

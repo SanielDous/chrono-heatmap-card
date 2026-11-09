@@ -1,4 +1,4 @@
-# The local npm proxy (Artifactory) only serves versions it has already cached and scanned; brand-new
+# The local npm proxy only serves versions it has already cached and scanned; brand-new
 # versions time out. Prefer versions that have been around for a while, and pin a few transitive packages
 # to versions known to be cached. Remove a pin once the proxy serves the newer version.
 minimumReleaseAge: 43200 # minutes = 30 days

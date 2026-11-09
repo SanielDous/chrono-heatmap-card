@@ -29,6 +29,7 @@ describe('normalizeConfig', () => {
     expect(c.show_legend).toBe(true);
     expect(c.show_labels).toBe(true);
     expect(c.newest_first).toBe(false);
+    expect(c.cell_spacing).toBe('normal');
   });
 
   it('picks the default column unit per row unit', () => {
@@ -124,6 +125,13 @@ describe('normalizeConfig', () => {
     expect(normalizeConfig({ ...base, newest_first: true }).newest_first).toBe(true);
     expect(normalizeConfig({ ...base, newest_first: false }).newest_first).toBe(false);
     expect(errorKey(() => normalizeConfig({ ...base, newest_first: 'yes' as never }))).toBe(
+      'error.invalid_option',
+    );
+  });
+
+  it('validates cell_spacing', () => {
+    expect(normalizeConfig({ ...base, cell_spacing: 'none' }).cell_spacing).toBe('none');
+    expect(errorKey(() => normalizeConfig({ ...base, cell_spacing: 'tight' as never }))).toBe(
       'error.invalid_option',
     );
   });

@@ -10,27 +10,38 @@ interface Preset {
 
 const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
 
-export const PRESETS: Record<PresetName, Preset> = {
-  // Outdoor temperature: a new color every 4 °C from -10 °C (5 °C for the last step to 35 °C): indigo, two blues,
-  // sky, cyan, green, yellow-green, yellow, orange, red, crimson, violet; perceptual contrast (OKLab) 2–4.5 per °C.
-  temperature: {
+/** Outdoor temperature colors, cold to hot: indigo, two blues, sky, cyan, green, yellow-green, yellow, orange, red,
+ * crimson, violet. */
+const OUTDOOR_COLORS = [
+  '#3a1c71',
+  '#30349a',
+  '#2f5fc0',
+  '#2f8ad6',
+  '#2ec0c8',
+  '#5ccf6a',
+  '#b8d93a',
+  '#fde24f',
+  '#f8983a',
+  '#e2442f',
+  '#a8164f',
+  '#7b1fa2',
+];
+
+function outdoor(values: number[]): Preset {
+  return {
     type: 'absolute',
     units: ['°C', '°F'],
-    steps: [
-      { value: -10, color: '#3a1c71' },
-      { value: -6, color: '#30349a' },
-      { value: -2, color: '#2f5fc0' },
-      { value: 2, color: '#2f8ad6' },
-      { value: 6, color: '#2ec0c8' },
-      { value: 10, color: '#5ccf6a' },
-      { value: 14, color: '#b8d93a' },
-      { value: 18, color: '#fde24f' },
-      { value: 22, color: '#f8983a' },
-      { value: 26, color: '#e2442f' },
-      { value: 30, color: '#a8164f' },
-      { value: 35, color: '#7b1fa2' },
-    ],
-  },
+    steps: values.map((value, i) => ({ value, color: OUTDOOR_COLORS[i] })),
+  };
+}
+
+export const PRESETS: Record<PresetName, Preset> = {
+  // Outdoor temperature (temperate climate, the default): a new color every 4 °C from -10 °C (5 °C for the last step
+  // to 35 °C); perceptual contrast (OKLab) 2–4.5 per °C.
+  temperature: outdoor([-10, -6, -2, 2, 6, 10, 14, 18, 22, 26, 30, 35]),
+  // The same colors for cold climates (-25 to 25 °C, every 4.5 °C) and hot climates (0 to 45 °C, every 4 °C).
+  temperature_cold: outdoor([-25, -20.5, -16, -11.5, -7, -2.5, 2, 6.5, 11, 15.5, 20, 25]),
+  temperature_hot: outdoor([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45]),
   // Indoor temperature: the same hues between 14 and 28 °C, green at the ideal 21 °C so deviations stand out; one hue
   // per °C from 21 to 25 °C (green, yellow-green, yellow, orange, red), per 1.5 °C from 16.5 to 21 °C and from 25 to
   // 28 °C (crimson, violet), blue at 14 °C.

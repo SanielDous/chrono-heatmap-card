@@ -9,3 +9,6 @@ e2e-ha-run/
 *.log
 .DS_Store
 .claude/
+
+# registry credentials/config stay local
+.npmrc

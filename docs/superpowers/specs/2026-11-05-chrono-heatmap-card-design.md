@@ -45,7 +45,7 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 
 - Nur aktuelle HA-Version (Stand Nov. 2026); keine Rückwärtskompatibilität.
 - Karte ist ein Standard-Custom-Element, eine einzige gebündelte JS-Datei, alle Abhängigkeiten mitgebündelt.
-- Pakete kommen lokal aus einem npm-Proxy, der nur bereits gecachte und gescannte Versionen liefert; neue Versionen
+- Pakete kommen aus einem lokalen npm-Proxy, der nur bereits gecachte und gescannte Versionen liefert; neue Versionen
   hängen. Deshalb exakt gepinnte Abhängigkeiten, `minimumReleaseAge` und Overrides in `pnpm-workspace.yaml`. Die
   GitHub-CI nutzt die öffentliche Registry.
 - Lokale Umgebung: Windows 11 mit WSL2, **kein Docker Desktop**.

@@ -108,8 +108,8 @@ Notes:
   data range instead. Choosing a preset yourself (e.g. `traffic` for a battery) uses it as is, without the
   automatic reverse and range.
 - `indoor_temperature` (°C/°F) uses the same hues between 14 and 28 °C, green at the ideal 21 °C and one hue per °C
-  up to 25 °C (yellow-green, yellow, orange, red), for rooms, where the
-  outdoor-oriented `temperature` scale shows little contrast. Device classes can't tell indoor from outdoor, so
+  up to 25 °C (yellow-green, yellow, orange, red), for rooms, where the outdoor-oriented `temperature` scale shows
+  little contrast. Device classes can't tell indoor from outdoor, so
   choose it yourself (`scale.preset: indoor_temperature`).
 - `sum` adds up the per-period means (e.g. hourly averages of a power sensor); for meters use `change`.
 - `year` × `week` columns are labelled with calendar weeks (ISO weeks when the week starts on Monday) of the

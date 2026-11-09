@@ -11,8 +11,8 @@ interface Preset {
 const MONO_BASE = 'var(--chm-mono-color, var(--primary-color, #03a9f4))';
 
 export const PRESETS: Record<PresetName, Preset> = {
-  // Outdoor temperature: a new hue every 4 °C from -10 to 35 °C (indigo, blue, sky, cyan, green, yellow-green,
-  // yellow, orange, red, crimson, violet) with about even perceptual contrast (OKLab) per °C.
+  // Outdoor temperature: a new color every 4 °C from -10 °C (5 °C for the last step to 35 °C): indigo, two blues,
+  // sky, cyan, green, yellow-green, yellow, orange, red, crimson, violet; perceptual contrast (OKLab) 2–4.5 per °C.
   temperature: {
     type: 'absolute',
     units: ['°C', '°F'],
@@ -32,7 +32,8 @@ export const PRESETS: Record<PresetName, Preset> = {
     ],
   },
   // Indoor temperature: the same hues between 14 and 28 °C, green at the ideal 21 °C so deviations stand out; one hue
-  // per °C from 21 to 25 °C (green, yellow-green, yellow, orange, red) and per 1.5 °C below, violet at 28 °C.
+  // per °C from 21 to 25 °C (green, yellow-green, yellow, orange, red), per 1.5 °C from 16.5 to 21 °C and from 25 to
+  // 28 °C (crimson, violet), blue at 14 °C.
   indoor_temperature: {
     type: 'absolute',
     units: ['°C', '°F'],

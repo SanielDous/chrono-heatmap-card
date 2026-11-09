@@ -12,9 +12,10 @@ describe('resolveScale', () => {
 
   it('converts the temperature preset to °F', () => {
     const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: '°F' });
-    const idx = PRESETS.temperature.steps.findIndex((x) => x.value === 19);
-    expect(s.stops[idx].value).toBeCloseTo(66.2);
+    const idx = PRESETS.temperature.steps.findIndex((x) => x.value === 18);
+    expect(s.stops[idx].value).toBeCloseTo(64.4);
     expect(s.min).toBe(14);
+    expect(s.max).toBe(95);
   });
 
   it('uses the indoor temperature preset as is when chosen, also in °F', () => {
@@ -31,6 +32,21 @@ describe('resolveScale', () => {
 
   it('lists exactly the absolute presets in ABSOLUTE_PRESETS', () => {
     expect(ABSOLUTE_PRESETS).toEqual(PRESET_NAMES.filter((n) => PRESETS[n].type === 'absolute'));
+  });
+
+  it('uses each color once per preset, so different values never look the same', () => {
+    for (const name of PRESET_NAMES) {
+      const colors = PRESETS[name].steps.map((s) => s.color);
+      expect(new Set(colors).size, name).toBe(colors.length);
+    }
+  });
+
+  it('has ascending stop values in every preset', () => {
+    for (const name of PRESET_NAMES) {
+      const values = PRESETS[name].steps.map((s) => s.value);
+      expect(values, name).toEqual([...values].sort((a, b) => a - b));
+      expect(new Set(values).size, name).toBe(values.length);
+    }
   });
 
   it('defaults to viridis spread over the data range', () => {

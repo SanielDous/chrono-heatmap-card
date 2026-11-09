@@ -33,13 +33,15 @@ const esc = (s: string | number): string =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
   );
 
+/** Largest gap between cells per spacing level; also the largest corner radius. */
+const CELL_GAP: Record<CellSpacing, number> = { normal: 2, small: 1, none: 0 };
+
 interface Layout {
   width: number;
   height: number;
   cellW: number;
   cellH: number;
   gap: number;
-  spacing: CellSpacing;
   labelLeft: number;
   labelTop: number;
   vertical: boolean;
@@ -433,23 +435,12 @@ export class ChronoHeatmapCard extends HTMLElement {
     const labelLeft = labels ? (vertical ? 34 : rowLabelWidth(cfg.row_unit)) : 0;
     const labelTop = labels ? 16 : 0;
     const raw = (width - labelLeft) / nAcross;
-    // normal: 2 px between cells (1 px for small cells); small: 1 px; none: cells touch
-    const gap =
-      cfg.cell_spacing === 'none'
-        ? 0
-        : cfg.cell_spacing === 'small'
-          ? raw >= 4
-            ? 1
-            : 0
-          : raw >= 8
-            ? 2
-            : raw >= 4
-              ? 1
-              : 0;
+    // 2 px between cells, 1 px for small cells, none for tiny ones; capped by the configured spacing
+    const gap = Math.min(CELL_GAP[cfg.cell_spacing], raw >= 8 ? 2 : raw >= 4 ? 1 : 0);
     const cellW = raw - gap;
     const cellH = Math.min(Math.max(cellW, vertical ? 6 : 10), 28);
     const height = labelTop + nDown * (cellH + gap);
-    return { width, height, cellW, cellH, gap, labelLeft, labelTop, vertical, spacing: cfg.cell_spacing };
+    return { width, height, cellW, cellH, gap, labelLeft, labelTop, vertical };
   }
 
   private _gridSvg(
@@ -464,7 +455,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const pitchY = L.cellH + L.gap;
     const r = (n: number) => Math.round(n * 100) / 100;
     // corners shrink with the spacing; touching cells are square so they form one surface
-    const rx = L.spacing === 'none' ? 0 : r(Math.min(L.spacing === 'small' ? 1 : 2, L.cellW / 4));
+    const rx = r(Math.min(CELL_GAP[cfg.cell_spacing], L.cellW / 4));
     const parts: string[] = [];
     // display position of a row: oldest first (default) or newest first
     const last = grid.rows.length - 1;
@@ -515,7 +506,9 @@ export class ChronoHeatmapCard extends HTMLElement {
       });
     });
 
-    return `<svg class="grid" xmlns="http://www.w3.org/2000/svg" width="${r(L.width)}" height="${r(L.height)}" viewBox="0 0 ${r(L.width)} ${r(L.height)}" role="img">${parts.join('')}</svg>`;
+    // touching cells: no anti-aliasing on the shared edges, otherwise the background shows through as a hairline grid
+    const crisp = L.gap === 0 ? ' shape-rendering="crispEdges"' : '';
+    return `<svg class="grid" xmlns="http://www.w3.org/2000/svg" width="${r(L.width)}" height="${r(L.height)}" viewBox="0 0 ${r(L.width)} ${r(L.height)}" role="img"${crisp}>${parts.join('')}</svg>`;
   }
 
   private _renderTooltip(): void {

@@ -64,6 +64,12 @@ describe('chrono-heatmap-card', () => {
       const [a, b] = [...el.shadowRoot!.querySelectorAll('rect.cell[data-r="0"]')];
       const num = (r: Element, k: string) => Number(r.getAttribute(k));
       expect(num(b, 'x') - num(a, 'x') - num(a, 'width')).toBeCloseTo(gap, 1);
+      const [c, d] = [...el.shadowRoot!.querySelectorAll('rect.cell[data-c="0"]')];
+      expect(num(d, 'y') - num(c, 'y') - num(c, 'height')).toBeCloseTo(gap, 1);
+      // touching cells are drawn without anti-aliasing, so no hairlines show between them
+      expect(el.shadowRoot!.querySelector('svg.grid')!.getAttribute('shape-rendering')).toBe(
+        gap === 0 ? 'crispEdges' : null,
+      );
       // corners are at most rx, and at most a quarter of the cell
       expect(num(a, 'rx')).toBeCloseTo(Math.min(rx, num(a, 'width') / 4), 1);
       el.remove();

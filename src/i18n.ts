@@ -131,7 +131,7 @@ const de: Dict = {
   'editor.cell_spacing': 'Zellabstand',
   'spacing.normal': 'Normal',
   'spacing.small': 'Klein',
-  'spacing.none': 'Kein',
+  'spacing.none': 'Keiner',
   'editor.source': 'Datenquelle',
   'editor.aggregation': 'Aggregation',
   'editor.aggregation_helper': 'Leer lassen, um automatisch anhand der Entität zu wählen.',

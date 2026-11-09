@@ -1,5 +1,7 @@
 # Chrono Heatmap Card
 
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=SanielDous&repository=chrono-heatmap-card&category=plugin)
+
 A Home Assistant dashboard card that shows the history of one entity as a heatmap, with free choice of what a
 row is: an **hour, day, week, month or year**. Columns are the matching subdivision (5 minutes, hours, days,
 weeks, months).
@@ -32,10 +34,9 @@ Requires Home Assistant 2024.8 or newer (tested with the version in [`e2e-ha/com
 
 ### Marketplace / HACS
 
-1. Open the Marketplace (HACS) and search for **Chrono Heatmap Card**.
+1. Click the **Open in Marketplace** button above, or open the Marketplace (HACS) and search for
+   **Chrono Heatmap Card**.
 2. Install it and reload the browser. The dashboard resource is added automatically (with YAML-managed resources, add `/local/community/chrono-heatmap-card/chrono-heatmap-card.js` yourself).
-
-Until the card is listed there, add it as a custom repository first: ⋮ → _Custom repositories_ → this repository's URL, type **Dashboard**.
 
 After an update, dashboards that are already open (e.g. the companion app in the background) still run the old
 version. The card notices this and offers a **Reload** in a notification; reloading the page or restarting the app

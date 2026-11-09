@@ -4,7 +4,16 @@ export type Aggregation = 'mean' | 'min' | 'max' | 'sum' | 'last' | 'change' | '
 export type Source = 'auto' | 'statistics' | 'history';
 export type Orientation = 'horizontal' | 'vertical';
 export type PresetName =
-  'temperature' | 'indoor_temperature' | 'humidity' | 'co2' | 'pm25' | 'traffic' | 'viridis' | 'mono';
+  | 'temperature'
+  | 'temperature_cold'
+  | 'temperature_hot'
+  | 'indoor_temperature'
+  | 'humidity'
+  | 'co2'
+  | 'pm25'
+  | 'traffic'
+  | 'viridis'
+  | 'mono';
 export type ScaleType = 'absolute' | 'relative';
 
 export interface ScaleStep {
@@ -73,6 +82,8 @@ export const COLUMN_UNITS: ColumnUnit[] = ['minute', '5minute', 'hour', 'day', '
 export const AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'sum', 'last', 'change', 'on_ratio'];
 export const PRESET_NAMES: PresetName[] = [
   'temperature',
+  'temperature_cold',
+  'temperature_hot',
   'indoor_temperature',
   'humidity',
   'co2',
@@ -84,6 +95,8 @@ export const PRESET_NAMES: PresetName[] = [
 /** Presets with fixed values in the entity's unit (the others spread over the data range). */
 export const ABSOLUTE_PRESETS: PresetName[] = [
   'temperature',
+  'temperature_cold',
+  'temperature_hot',
   'indoor_temperature',
   'humidity',
   'co2',

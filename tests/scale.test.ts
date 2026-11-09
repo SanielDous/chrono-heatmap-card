@@ -30,6 +30,19 @@ describe('resolveScale', () => {
     expect(f.max).toBeCloseTo(82.4);
   });
 
+  it('offers the outdoor colors for cold and hot climates, only when chosen', () => {
+    const colors = (name: 'temperature' | 'temperature_cold' | 'temperature_hot') =>
+      PRESETS[name].steps.map((s) => s.color);
+    expect(colors('temperature_cold')).toEqual(colors('temperature'));
+    expect(colors('temperature_hot')).toEqual(colors('temperature'));
+    expect(colors('temperature').every((c) => /^#[0-9a-f]{6}$/.test(c))).toBe(true);
+    const cold = resolveScale({ preset: 'temperature_cold' }, { ...ctx, unit: '°C' });
+    expect([cold.min, cold.max]).toEqual([-25, 25]);
+    const hot = resolveScale({ preset: 'temperature_hot' }, { ...ctx, unit: '°F' });
+    expect([hot.min, hot.max]).toEqual([32, 113]);
+    expect(autoPreset({ ...ctx, deviceClass: 'temperature', unit: '°C' }).preset).toBe('temperature');
+  });
+
   it('lists exactly the absolute presets in ABSOLUTE_PRESETS', () => {
     expect(ABSOLUTE_PRESETS).toEqual(PRESET_NAMES.filter((n) => PRESETS[n].type === 'absolute'));
   });

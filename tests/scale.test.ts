@@ -35,7 +35,12 @@ describe('resolveScale', () => {
       PRESETS[name].steps.map((s) => s.color);
     expect(colors('temperature_cold')).toEqual(colors('temperature'));
     expect(colors('temperature_hot')).toEqual(colors('temperature'));
-    expect(colors('temperature').every((c) => /^#[0-9a-f]{6}$/.test(c))).toBe(true);
+    for (const n of ['temperature', 'temperature_cold', 'temperature_hot'] as const) {
+      expect(
+        colors(n).every((c) => /^#[0-9a-f]{6}$/.test(c)),
+        n,
+      ).toBe(true);
+    }
     const cold = resolveScale({ preset: 'temperature_cold' }, { ...ctx, unit: '°C' });
     expect([cold.min, cold.max]).toEqual([-25, 25]);
     const hot = resolveScale({ preset: 'temperature_hot' }, { ...ctx, unit: '°F' });

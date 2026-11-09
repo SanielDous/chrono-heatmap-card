@@ -107,7 +107,7 @@ Notes:
   bands), battery as reversed `traffic` from 0 to 100 %. With an unexpected unit the preset is spread over the
   data range instead. Choosing a preset yourself (e.g. `traffic` for a battery) uses it as is, without the
   automatic reverse and range.
-- `temperature_cold` (-25 to 25 °C) and `temperature_hot` (0 to 45 °C) use the colors of `temperature` for colder
+- `temperature_cold` (°C/°F, -25 to 25 °C) and `temperature_hot` (°C/°F, 0 to 45 °C) use the colors of `temperature` for colder
   and hotter climates. Choose them yourself; the automatic choice is always `temperature`.
 - `indoor_temperature` (°C/°F) uses the same hues between 14 and 28 °C, green at the ideal 21 °C and one hue per °C
   up to 25 °C (yellow-green, yellow, orange, red), for rooms, where the outdoor-oriented `temperature` scale shows

@@ -45,9 +45,9 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 
 - Nur aktuelle HA-Version (Stand Nov. 2026); keine Rückwärtskompatibilität.
 - Karte ist ein Standard-Custom-Element, eine einzige gebündelte JS-Datei, alle Abhängigkeiten mitgebündelt.
-- Pakete kommen lokal ausschließlich aus der Firmen-Artifactory (`gb40-npmjs-remote`, nur mit VPN). Sie liefert nur
-  bereits gecachte und gescannte Versionen; neue Versionen hängen. Deshalb exakt gepinnte Abhängigkeiten,
-  `minimumReleaseAge` und Overrides in `pnpm-workspace.yaml`. Die GitHub-CI nutzt die öffentliche Registry.
+- Pakete kommen aus einem lokalen npm-Proxy, der nur bereits gecachte und gescannte Versionen liefert; neue Versionen
+  hängen. Deshalb exakt gepinnte Abhängigkeiten, `minimumReleaseAge` und Overrides in `pnpm-workspace.yaml`. Die
+  GitHub-CI nutzt die öffentliche Registry.
 - Lokale Umgebung: Windows 11 mit WSL2, **kein Docker Desktop**.
 - Hosting: GitHub, GitHub Actions. Lizenz: MIT (bestehend).
 
@@ -74,7 +74,7 @@ die Karte so, wie sie in HA aussehen wird (Hot Reload), und die CI liefert pro P
 | Screenshots    | Playwright                                            |
 | Lint/Format    | ESLint + Prettier                                     |
 
-\* Ursprünglich Lit. Lit ist über die Artifactory in keiner Version abrufbar (Stand 2026-11-05), daher
+\* Ursprünglich Lit. Lit ist über den lokalen npm-Proxy in keiner Version abrufbar (Stand 2026-11-05), daher
 _Claudes Entscheidung während der Umsetzung_: kein Framework. HA erlaubt das ausdrücklich. Die Karte rendert das
 Raster als einen SVG-String, wenn sich Daten oder Größe ändern; der Tooltip ist ein eigenes Element. Ein späterer
 Umstieg auf Lit ist möglich, sobald es verfügbar ist.

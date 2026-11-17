@@ -128,9 +128,10 @@ Dependencies are pinned to exact versions, and `pnpm-workspace.yaml` sets `minim
 overrides. This keeps installs working behind npm proxies that only serve versions they have already cached.
 Remove a pin once your registry serves newer versions.
 
-[Renovate](https://docs.renovatebot.com/) opens update PRs on Mondays (`renovate.json`): only versions at least
-30 days old (same as `minimumReleaseAge`), small devDependency updates grouped, Playwright separately (it needs a
-matching local browser: `pnpm exec playwright install chromium`).
+[Dependabot](https://docs.github.com/code-security/dependabot) opens update PRs on Mondays
+(`.github/dependabot.yml`): only versions at least 30 days old (same as `minimumReleaseAge`; Playwright is exempt,
+the Home Assistant image waits 3 days), small devDependency updates and GitHub Actions grouped, Playwright separately
+(it needs a matching local browser: `pnpm exec playwright install chromium`).
 
 ```bash
 pnpm install
@@ -151,7 +152,7 @@ instance: copy `dist/chrono-heatmap-card.js` to `config/www/`.
 ### End-to-end test against a real Home Assistant
 
 The CI job _Home Assistant E2E_ runs on every pull request. It starts the official Home Assistant container
-(version pinned in `e2e-ha/compose.yaml`, updated by Renovate) with the minimal `e2e-ha/config/`, then
+(version pinned in `e2e-ha/compose.yaml`, updated by Dependabot) with the minimal `e2e-ha/config/`, then
 `e2e-ha/setup.ts` (plain Node ≥ 22.18 for type stripping and the global `WebSocket`, no extra dependencies):
 
 - completes onboarding through the REST API (user, time zone Europe/Berlin, analytics, integration step),

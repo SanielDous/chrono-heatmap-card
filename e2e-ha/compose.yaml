@@ -1,5 +1,5 @@
 # Home Assistant for the end-to-end test (CI job "Home Assistant E2E", see README).
-# Renovate keeps the image tag up to date.
+# Dependabot keeps the image tag up to date.
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:2026.11.0

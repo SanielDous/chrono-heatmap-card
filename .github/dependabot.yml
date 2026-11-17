@@ -1,0 +1,68 @@
+# Update PRs on Monday mornings. Only versions at least 30 days old, matching `minimumReleaseAge` in
+# pnpm-workspace.yaml; the overrides there are maintained by hand.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:00'
+      timezone: Europe/Berlin
+    cooldown:
+      # one day more than minimumReleaseAge, so pnpm never rejects a version Dependabot picked
+      default-days: 31
+      # pnpm-workspace.yaml excludes Playwright from minimumReleaseAge as well
+      exclude:
+        - '@playwright/test'
+        - playwright
+        - playwright-core
+    # runtime dependencies are bundled into the card, so their updates are fixes and get a release
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    groups:
+      # on its own: a new version needs a matching local browser (pnpm exec playwright install chromium)
+      playwright:
+        patterns:
+          - '@playwright/test'
+          - playwright
+          - playwright-core
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+        exclude-patterns:
+          - '@playwright/test'
+          - playwright
+          - playwright-core
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:00'
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 30
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      github-actions:
+        patterns: ['*']
+
+  # Home Assistant image for the end-to-end test: test against new releases soon after they ship
+  - package-ecosystem: docker-compose
+    directory: /e2e-ha
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:00'
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: chore
+      include: scope

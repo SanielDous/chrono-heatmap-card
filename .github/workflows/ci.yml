@@ -17,9 +17,9 @@ jobs:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: pnpm
@@ -30,7 +30,7 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm build:demo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: chrono-heatmap-card
           path: dist/chrono-heatmap-card.js
@@ -62,16 +62,16 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm screenshots
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         id: upload
         if: always()
         with:
@@ -82,7 +82,7 @@ jobs:
           retention-days: 14
       - name: Comment on PR
         if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
           JOB_STATUS: ${{ job.status }}
@@ -111,7 +111,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # The image (version pinned in e2e-ha/compose.yaml) is pulled while dependencies install;
       # e2e-ha/setup.ts waits until HA answers.
       - name: Start Home Assistant
@@ -119,8 +119,8 @@ jobs:
           mkdir -p e2e-ha-run
           cp -r e2e-ha/config e2e-ha-run/config
           nohup docker compose -f e2e-ha/compose.yaml up -d > e2e-ha-run/compose-up.log 2>&1 &
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: pnpm
@@ -138,7 +138,7 @@ jobs:
           docker compose -f e2e-ha/compose.yaml logs --no-color > e2e-ha-run/docker.log 2>&1 || true
           sudo cp e2e-ha-run/config/home-assistant.log e2e-ha-run/home-assistant.log || true
           sudo chmod a+r e2e-ha-run/home-assistant.log || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: ha-e2e-logs
@@ -148,7 +148,7 @@ jobs:
             e2e-ha-run/home-assistant.log
           if-no-files-found: ignore
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         id: upload
         if: always()
         with:
@@ -160,7 +160,7 @@ jobs:
           retention-days: 14
       - name: Comment on PR
         if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.upload.outputs.artifact-url != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
           JOB_STATUS: ${{ job.status }}

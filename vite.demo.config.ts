@@ -7,7 +7,6 @@ export default defineConfig({
   define: {
     __CARD_VERSION__: JSON.stringify(process.env.RELEASE_VERSION ?? 'demo'),
   },
-  esbuild: { target: 'es2022' },
   build: {
     target: 'es2022',
     outDir: '../dist-demo',

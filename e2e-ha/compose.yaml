@@ -2,7 +2,7 @@
 # Dependabot keeps the image tag up to date.
 services:
   homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:2026.11.0
+    image: ghcr.io/home-assistant/home-assistant:2026.11.2
     ports:
       - '8123:8123'
     volumes:

@@ -52,6 +52,25 @@ test('click opens more-info', async ({ page }) => {
   await expect(page.locator('#event-log')).toHaveText('hass-more-info → sensor.outdoor_temperature');
 });
 
+test('playground form edits the YAML and the card', async ({ page }) => {
+  await page.goto(`/dev/index.html?now=${NOW}&only=day-hour-temperature`);
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await waitForCards(page, 2);
+  const form = page.locator('#form');
+  await form.locator('label:has(code:text-is("row_unit")) select').selectOption('week');
+  await form.locator('label:has(code:text-is("legend_ticks")) select').selectOption('auto');
+  await expect(page.locator('#yaml')).toHaveValue(/row_unit: week[\s\S]*legend_ticks: auto/);
+  await waitForCards(page, 2);
+  await expect(page.locator('#playground-card chrono-heatmap-card .legend-tick').first()).toBeAttached();
+
+  // and back: YAML typed by hand shows up in the form
+  await page.locator('#yaml').fill('type: custom:chrono-heatmap-card\nentity: sensor.office_co2\nrows: 3\n');
+  await expect(form.locator('label:has(code:text-is("rows")) input')).toHaveValue('3');
+  await expect(form.locator('label:has(code:text-is("row_unit")) select')).toHaveValue('');
+  await page.locator('#playground').screenshot({ path: `${OUT}/interaction/playground.png` });
+});
+
 async function waitForCards(page: import('@playwright/test').Page, count: number): Promise<void> {
   // a card is done when it shows either the grid or a warning
   await expect

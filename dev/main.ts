@@ -1,17 +1,20 @@
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import '../src/chrono-heatmap-card';
 import type { ChronoHeatmapCard } from '../src/chrono-heatmap-card';
 import type { CardConfig } from '../src/config';
+import { getConfigFormSchema } from '../src/editor';
+import { TRANSLATIONS } from '../src/i18n';
 import { GALLERY } from './gallery';
 import { THEME_CSS } from './ha-shim';
 import { createMockHass } from './mock-hass';
+import { createPlaygroundForm, type PlaygroundForm } from './playground';
 
 // URL parameters (used by Playwright): ?now=ISO&theme=dark&lang=de&only=<gallery id>&playground=0
 const params = new URLSearchParams(location.search);
 const state = {
   now: params.has('now') ? Date.parse(params.get('now')!) : Date.now(),
   theme: params.get('theme') === 'dark' ? 'dark' : 'light',
-  lang: params.get('lang') === 'de' ? 'de' : 'en',
+  lang: Object.hasOwn(TRANSLATIONS, params.get('lang') ?? '') ? params.get('lang')! : 'en',
   only: params.get('only'),
   playground: params.get('playground') !== '0',
 };
@@ -21,15 +24,9 @@ $('theme').textContent = THEME_CSS;
 
 const DEFAULT_YAML = `type: custom:chrono-heatmap-card
 entity: sensor.outdoor_temperature
-row_unit: day
-rows: 14
-# column_unit: hour
-# orientation: vertical
-# aggregation: max
-# scale:
-#   preset: viridis
 `;
 const STORAGE_KEY = 'chrono-heatmap-dev-yaml';
+let form: PlaygroundForm | undefined;
 
 const cards: { el: ChronoHeatmapCard; config: CardConfig }[] = [];
 
@@ -40,6 +37,7 @@ function hass() {
 function applyGlobals(): void {
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.lang = state.lang;
+  document.body.classList.toggle('no-playground', !state.playground);
   $<HTMLSelectElement>('theme-select').value = state.theme;
   $<HTMLSelectElement>('lang-select').value = state.lang;
   const local = new Date(state.now - new Date(state.now).getTimezoneOffset() * 60_000);
@@ -70,13 +68,81 @@ function renderGallery(): void {
     label.textContent = item.id;
     wrap.append(label);
     gallery.append(wrap);
-    mount(wrap, { type: 'custom:chrono-heatmap-card', ...item.config });
+    const config = { type: 'custom:chrono-heatmap-card', ...item.config };
+    const tryIt = document.createElement('button');
+    tryIt.type = 'button';
+    tryIt.className = 'try';
+    tryIt.textContent = 'Edit in playground ↑';
+    tryIt.addEventListener('click', () => {
+      setYaml(config);
+      $('playground').scrollIntoView({ behavior: 'smooth' });
+    });
+    label.append(tryIt);
+    mount(wrap, config);
+  }
+}
+
+function playgroundConfig(): Record<string, unknown> | undefined {
+  try {
+    const config = parse($<HTMLTextAreaElement>('yaml').value) as unknown;
+    return config && typeof config === 'object' && !Array.isArray(config)
+      ? (config as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Write a config to the YAML (type and entity first) and redraw the card; the form follows unless it was the source. */
+function setYaml(config: Record<string, unknown>, fromForm = false): void {
+  const { type, entity, ...rest } = config;
+  const ordered = { type: type ?? 'custom:chrono-heatmap-card', entity, ...rest };
+  $<HTMLTextAreaElement>('yaml').value = stringify(ordered);
+  saveYaml();
+  if (!fromForm) form?.setConfig(ordered);
+  updateFormNote();
+  renderPlayground();
+}
+
+function buildForm(): void {
+  form = createPlaygroundForm($('form'), state.lang, playgroundConfig() ?? {}, (c) => {
+    clearTimeout(debounce); // a pending YAML edit is already in the form
+    setYaml(c, true);
+  });
+  updateFormNote();
+}
+
+/** Custom color steps are YAML only, as in Home Assistant's editor. */
+function updateFormNote(): void {
+  const note = $('form-note');
+  note.textContent = '';
+  const config = playgroundConfig();
+  // while the YAML cannot be read, the form would overwrite it with its last state
+  $<HTMLFieldSetElement>('form').disabled = !config;
+  if (!config) {
+    note.textContent = 'Fix the YAML to use the form again.';
+    return;
+  }
+  try {
+    getConfigFormSchema(state.lang).assertConfig(config as unknown as CardConfig);
+  } catch (e) {
+    note.textContent = e instanceof Error ? e.message : String(e);
+  }
+}
+
+function saveYaml(): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, $<HTMLTextAreaElement>('yaml').value);
+  } catch {
+    /* ignore */
   }
 }
 
 function renderPlayground(): void {
   const container = $('playground-card');
   container.replaceChildren();
+  // forget the cards just removed
+  for (let i = cards.length - 1; i >= 0; i--) if (!cards[i].el.isConnected) cards.splice(i, 1);
   const errorEl = $('yaml-error');
   errorEl.textContent = '';
   try {
@@ -105,11 +171,10 @@ let debounce: ReturnType<typeof setTimeout> | undefined;
 textarea.addEventListener('input', () => {
   clearTimeout(debounce);
   debounce = setTimeout(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, textarea.value);
-    } catch {
-      /* ignore */
-    }
+    saveYaml();
+    const config = playgroundConfig();
+    if (config) form?.setConfig(config);
+    updateFormNote();
     renderPlayground();
   }, 300);
 });
@@ -120,6 +185,7 @@ $<HTMLSelectElement>('theme-select').addEventListener('change', (e) => {
 $<HTMLSelectElement>('lang-select').addEventListener('change', (e) => {
   state.lang = (e.target as HTMLSelectElement).value;
   applyGlobals();
+  buildForm();
   const h = hass();
   for (const c of cards) c.el.hass = h;
 });
@@ -141,4 +207,21 @@ window.addEventListener('hass-more-info', (e) => {
   $('event-log').textContent = `hass-more-info → ${id}`;
 });
 
+$('reset-yaml').addEventListener('click', () => setYaml(parse(DEFAULT_YAML) as Record<string, unknown>));
+$('copy-yaml').addEventListener('click', async () => {
+  const button = $('copy-yaml');
+  try {
+    await navigator.clipboard.writeText(textarea.value);
+    button.textContent = 'Copied';
+  } catch {
+    textarea.select(); // no clipboard access (e.g. plain http): let the user copy it
+    button.textContent = 'Press Ctrl+C';
+  }
+  setTimeout(() => (button.textContent = 'Copy'), 2000);
+});
+$<HTMLSelectElement>('lang-select').replaceChildren(
+  ...Object.keys(TRANSLATIONS).map((l) => new Option(l, l)),
+);
+
 rerenderAll();
+buildForm();

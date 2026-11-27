@@ -145,8 +145,9 @@ pnpm build        # dist/chrono-heatmap-card.js
 pnpm build:demo   # static dev page → dist-demo/ (deployed to GitHub Pages on every push to main)
 ```
 
-The dev page renders a gallery of configurations plus a YAML playground, with a mock `hass` that answers the
-recorder/history WebSocket calls from deterministic fake sensors. URL parameters: `now`, `theme=dark`, `lang=de`,
+The dev page renders a playground (the card's own editor form, kept in sync with YAML) and a gallery of
+configurations, with a mock `hass` that answers the
+recorder/history WebSocket calls from deterministic fake sensors. URL parameters: `now`, `theme=dark`, `lang=de` (any card language),
 `only=<gallery id>`, `playground=0`.
 
 The visual editor (`getConfigForm`) is rendered by Home Assistant itself and can only be seen in a real HA

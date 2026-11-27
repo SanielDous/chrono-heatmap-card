@@ -57,15 +57,115 @@
         color: var(--secondary-text-color);
         margin: 0 0 4px 4px;
       }
+      h2 {
+        font-size: 18px;
+        font-weight: 500;
+        margin: 0 0 4px;
+      }
+      .item .id {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      button {
+        font: inherit;
+        font-size: 12px;
+        color: var(--primary-color);
+        background: none;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        padding: 2px 8px;
+        cursor: pointer;
+      }
       .playground {
+        margin-bottom: 32px;
+        padding: 16px;
+        border: 2px solid var(--primary-color);
+        border-radius: 12px;
+      }
+      .playground-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 492px);
-        gap: 16px;
-        margin-top: 24px;
+        gap: 24px;
+        align-items: start;
+      }
+      #form {
+        border: none;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+      }
+      #form:disabled {
+        opacity: 0.5;
+      }
+      .no-playground .try {
+        display: none;
+      }
+      @media (min-width: 1000px) {
+        .playground-preview {
+          position: sticky;
+          top: 72px;
+        }
+      }
+      #form details {
+        border-top: 1px solid var(--divider-color);
+        padding: 8px 0;
+      }
+      #form summary {
+        cursor: pointer;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+      .field-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 8px 16px;
+        margin-bottom: 8px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .field.field-boolean {
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+      }
+      .field code {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+      .field input:not([type='checkbox']),
+      .field select {
+        font: inherit;
+        padding: 4px 6px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+      }
+      .field-helper {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+      .yaml-head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 16px 0 4px;
+        font-size: 13px;
+      }
+      .yaml-head span {
+        flex: 1;
+        color: var(--secondary-text-color);
       }
       textarea {
         width: 100%;
-        min-height: 320px;
+        min-height: 200px;
         box-sizing: border-box;
         font: 13px/1.4 monospace;
         background: var(--card-background-color);
@@ -84,8 +184,11 @@
         color: var(--secondary-text-color);
       }
       @media (max-width: 800px) {
-        .playground {
+        .playground-grid {
           grid-template-columns: 1fr;
+        }
+        .playground-preview {
+          order: -1;
         }
       }
     </style>
@@ -102,29 +205,43 @@
       >
       <label
         >Language
-        <select id="lang-select">
-          <option value="en">en</option>
-          <option value="de">de</option>
-        </select></label
-      >
+        <select id="lang-select"></select
+      ></label>
       <label>Now <input id="now-input" type="datetime-local" /></label>
       <label><input id="playground-toggle" type="checkbox" checked /> Playground</label>
       <span class="event-log" id="event-log"></span>
       <a class="repo-link" href="https://github.com/SanielDous/chrono-heatmap-card">GitHub</a>
     </header>
     <main>
-      <p class="intro">
-        Mock data, no Home Assistant needed. Hover or tap a cell for details, switch theme, language and the
-        current time above, and edit the YAML in the playground at the bottom to try your own configuration.
-      </p>
-      <section class="gallery" id="gallery"></section>
       <section class="playground" id="playground">
-        <div>
-          <textarea id="yaml" spellcheck="false"></textarea>
-          <div class="error" id="yaml-error"></div>
+        <h2>Try it yourself</h2>
+        <p class="intro">
+          Mock data, no Home Assistant needed. Pick an entity and change any option: the card updates right
+          away. The form is the same editor Home Assistant shows; an empty field means the default, shown in
+          grey. The YAML holds only what you changed and can be pasted into a dashboard; you can edit it too
+          (comments are not kept when you use the form). Use “Edit in playground” on any example further down
+          to start from it.
+        </p>
+        <div class="playground-grid">
+          <div>
+            <fieldset id="form"></fieldset>
+            <div class="error" id="form-note"></div>
+          </div>
+          <div class="playground-preview">
+            <div id="playground-card"></div>
+            <div class="yaml-head">
+              <span>YAML</span>
+              <button type="button" id="copy-yaml">Copy</button>
+              <button type="button" id="reset-yaml">Reset</button>
+            </div>
+            <textarea id="yaml" spellcheck="false"></textarea>
+            <div class="error" id="yaml-error"></div>
+          </div>
         </div>
-        <div id="playground-card"></div>
       </section>
+      <h2>Examples</h2>
+      <p class="intro">Hover or tap a cell for details; switch theme, language and the current time above.</p>
+      <section class="gallery" id="gallery"></section>
     </main>
     <script type="module" src="./main.ts"></script>
   </body>

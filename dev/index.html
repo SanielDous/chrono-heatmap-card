@@ -89,9 +89,23 @@
         gap: 24px;
         align-items: start;
       }
-      .playground-preview {
-        position: sticky;
-        top: 72px;
+      #form {
+        border: none;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+      }
+      #form:disabled {
+        opacity: 0.5;
+      }
+      .no-playground .try {
+        display: none;
+      }
+      @media (min-width: 1000px) {
+        .playground-preview {
+          position: sticky;
+          top: 72px;
+        }
       }
       #form details {
         border-top: 1px solid var(--divider-color);
@@ -174,7 +188,7 @@
           grid-template-columns: 1fr;
         }
         .playground-preview {
-          position: static;
+          order: -1;
         }
       }
     </style>
@@ -204,12 +218,13 @@
         <p class="intro">
           Mock data, no Home Assistant needed. Pick an entity and change any option: the card updates right
           away. The form is the same editor Home Assistant shows; an empty field means the default, shown in
-          grey. The YAML below holds only what you changed and can be pasted into a dashboard. Use “Edit in
-          playground” on any example further down to start from it.
+          grey. The YAML holds only what you changed and can be pasted into a dashboard; you can edit it too
+          (comments are not kept when you use the form). Use “Edit in playground” on any example further down
+          to start from it.
         </p>
         <div class="playground-grid">
           <div>
-            <div id="form"></div>
+            <fieldset id="form"></fieldset>
             <div class="error" id="form-note"></div>
           </div>
           <div class="playground-preview">

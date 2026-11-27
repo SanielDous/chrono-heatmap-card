@@ -24,7 +24,9 @@ export function setIn(config: Config, path: string[], value: unknown): Config {
   const [key, ...rest] = path;
   const next = { ...config };
   if (rest.length) {
-    const child = setIn((next[key] as Config) ?? {}, rest, value);
+    const old = next[key];
+    const parent = old && typeof old === 'object' && !Array.isArray(old) ? (old as Config) : {};
+    const child = setIn(parent, rest, value);
     if (Object.keys(child).length) next[key] = child;
     else delete next[key];
   } else if (value === undefined) {
@@ -37,15 +39,19 @@ export function setIn(config: Config, path: string[], value: unknown): Config {
 
 /** What the card uses when the field is left out, as shown in the form (`auto` where it depends on the entity). */
 function defaultText(config: Config, path: string[]): string {
-  let normalized: unknown;
-  try {
-    normalized = normalizeConfig({ ...(config as unknown as CardConfig), entity: 'sensor.x' });
-  } catch {
-    return '';
+  // without the field itself; if the rest is invalid, from the row unit alone (rows and columns depend on it)
+  const without = setIn(config, path, undefined);
+  for (const candidate of [without, { row_unit: without.row_unit }, {}]) {
+    try {
+      const normalized = normalizeConfig({ ...(candidate as unknown as CardConfig), entity: 'sensor.x' });
+      const v = getIn(normalized as unknown as Config, path);
+      if (v === undefined) return 'auto';
+      return Array.isArray(v) ? v.join(', ') : String(v);
+    } catch {
+      /* try the next, smaller config */
+    }
   }
-  const v = getIn(normalized as Config, path);
-  if (v === undefined) return 'auto';
-  return Array.isArray(v) ? v.join(', ') : String(v);
+  return 'auto';
 }
 
 export function createPlaygroundForm(
@@ -84,12 +90,12 @@ export function createPlaygroundForm(
       box.type = 'checkbox';
       box.addEventListener('change', () => {
         // the default is left out of the YAML, so it stays short
-        const def = String(item.default ?? defaultText(config, path)) === 'true';
-        change(path, box.checked === def ? undefined : box.checked);
+        change(path, box.checked === boolDefault() ? undefined : box.checked);
       });
+      const boolDefault = () => String(item.default ?? defaultText(config, path)) === 'true';
       update = () => {
         const v = getIn(config, path);
-        box.checked = typeof v === 'boolean' ? v : defaultText(config, path) === 'true';
+        box.checked = typeof v === 'boolean' ? v : boolDefault();
       };
       input = box;
       wrap.classList.add('field-boolean');
@@ -124,7 +130,11 @@ export function createPlaygroundForm(
       num.addEventListener('change', () => change(path, num.value === '' ? undefined : Number(num.value)));
       update = () => {
         const v = getIn(config, path);
-        num.value = typeof v === 'number' ? String(v) : '';
+        // the card also accepts numbers written as strings
+        num.value =
+          typeof v === 'number' || (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v)))
+            ? String(v)
+            : '';
         num.placeholder = `default: ${defaultText(config, path)}`;
       };
       input = num;

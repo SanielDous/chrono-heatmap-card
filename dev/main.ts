@@ -14,7 +14,7 @@ const params = new URLSearchParams(location.search);
 const state = {
   now: params.has('now') ? Date.parse(params.get('now')!) : Date.now(),
   theme: params.get('theme') === 'dark' ? 'dark' : 'light',
-  lang: params.get('lang') && params.get('lang')! in TRANSLATIONS ? params.get('lang')! : 'en',
+  lang: Object.hasOwn(TRANSLATIONS, params.get('lang') ?? '') ? params.get('lang')! : 'en',
   only: params.get('only'),
   playground: params.get('playground') !== '0',
 };
@@ -37,6 +37,7 @@ function hass() {
 function applyGlobals(): void {
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.lang = state.lang;
+  document.body.classList.toggle('no-playground', !state.playground);
   $<HTMLSelectElement>('theme-select').value = state.theme;
   $<HTMLSelectElement>('lang-select').value = state.lang;
   const local = new Date(state.now - new Date(state.now).getTimezoneOffset() * 60_000);
@@ -104,7 +105,10 @@ function setYaml(config: Record<string, unknown>, fromForm = false): void {
 }
 
 function buildForm(): void {
-  form = createPlaygroundForm($('form'), state.lang, playgroundConfig() ?? {}, (c) => setYaml(c, true));
+  form = createPlaygroundForm($('form'), state.lang, playgroundConfig() ?? {}, (c) => {
+    clearTimeout(debounce); // a pending YAML edit is already in the form
+    setYaml(c, true);
+  });
   updateFormNote();
 }
 
@@ -113,6 +117,8 @@ function updateFormNote(): void {
   const note = $('form-note');
   note.textContent = '';
   const config = playgroundConfig();
+  // while the YAML cannot be read, the form would overwrite it with its last state
+  $<HTMLFieldSetElement>('form').disabled = !config;
   if (!config) {
     note.textContent = 'Fix the YAML to use the form again.';
     return;
@@ -135,6 +141,8 @@ function saveYaml(): void {
 function renderPlayground(): void {
   const container = $('playground-card');
   container.replaceChildren();
+  // forget the cards just removed
+  for (let i = cards.length - 1; i >= 0; i--) if (!cards[i].el.isConnected) cards.splice(i, 1);
   const errorEl = $('yaml-error');
   errorEl.textContent = '';
   try {
@@ -200,7 +208,17 @@ window.addEventListener('hass-more-info', (e) => {
 });
 
 $('reset-yaml').addEventListener('click', () => setYaml(parse(DEFAULT_YAML) as Record<string, unknown>));
-$('copy-yaml').addEventListener('click', () => void navigator.clipboard?.writeText(textarea.value));
+$('copy-yaml').addEventListener('click', async () => {
+  const button = $('copy-yaml');
+  try {
+    await navigator.clipboard.writeText(textarea.value);
+    button.textContent = 'Copied';
+  } catch {
+    textarea.select(); // no clipboard access (e.g. plain http): let the user copy it
+    button.textContent = 'Press Ctrl+C';
+  }
+  setTimeout(() => (button.textContent = 'Copy'), 2000);
+});
 $<HTMLSelectElement>('lang-select').replaceChildren(
   ...Object.keys(TRANSLATIONS).map((l) => new Option(l, l)),
 );

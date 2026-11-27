@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ABSOLUTE_PRESETS, PRESET_NAMES } from '../src/config';
-import { autoPreset, colorFor, legendGradient, PRESETS, resolveScale } from '../src/scale';
+import {
+  autoPreset,
+  colorFor,
+  legendGradient,
+  legendTicks,
+  niceTicks,
+  PRESETS,
+  resolveScale,
+} from '../src/scale';
 
 const ctx = { values: [] as number[], isRatio: false };
 
@@ -146,6 +154,36 @@ describe('legendGradient', () => {
       ctx,
     );
     expect(legendGradient(s)).toBe('linear-gradient(to right, red 0%, green 25%, blue 100%)');
+  });
+});
+
+describe('legend ticks', () => {
+  it('picks round values 1, 2 or 5 × 10ⁿ apart', () => {
+    expect(niceTicks(-10, 35, 4)).toEqual([-10, 0, 10, 20, 30]);
+    expect(niceTicks(0, 1, 5)).toEqual([0, 0.2, 0.4, 0.6, 0.8, 1]);
+    expect(niceTicks(400, 3000, 5)).toEqual([500, 1000, 1500, 2000, 2500, 3000]);
+    expect(niceTicks(0.1, 0.35, 5)).toEqual([0.1, 0.15, 0.2, 0.25, 0.3, 0.35]);
+    expect(niceTicks(5, 5, 5)).toEqual([]);
+  });
+
+  it('has no float noise, no -0 and no endless loop for extreme ranges', () => {
+    const t = niceTicks(-0.35, 0.35, 7);
+    expect(t).toEqual([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3]);
+    expect(Object.is(t[3], 0)).toBe(true);
+    expect(niceTicks(1.1, 1.5, 4)).toEqual([1.1, 1.2, 1.3, 1.4, 1.5]);
+    expect(niceTicks(1e16, 1e16 + 4, 5).length).toBeLessThanOrEqual(6);
+    expect(niceTicks(0, 1e-200, 5)).toHaveLength(6);
+  });
+
+  it('leaves out ticks at the labelled ends', () => {
+    const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: '°C' });
+    expect(legendTicks(s, 'auto', 4)).toEqual([0, 10, 20, 30]);
+    expect(legendTicks(s, 'steps', 4)).toEqual([-6, -2, 2, 6, 10, 14, 18, 22, 26, 30]);
+  });
+
+  it('puts step ticks at the thresholds, also for reversed scales', () => {
+    const s = resolveScale({ preset: 'co2', reverse: true }, { ...ctx, unit: 'ppm' });
+    expect(legendTicks(s, 'steps', 5)).toEqual([800, 1000, 1400, 2000]);
   });
 });
 

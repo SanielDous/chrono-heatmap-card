@@ -156,6 +156,31 @@ export function formatPeriod(
   }
 }
 
+/**
+ * Fraction digits for tick values: enough to keep neighbours apart (gap 0.5 → 1, 0.05 → 2), plus up to two more so a
+ * value like 12.5 between 10 and 15 is not rounded.
+ */
+export function tickDigits(values: number[]): number {
+  let gap = Infinity;
+  for (let i = 1; i < values.length; i++) {
+    const d = Math.abs(values[i] - values[i - 1]);
+    if (d > 0 && d < gap) gap = d;
+  }
+  const base = Number.isFinite(gap) ? Math.min(Math.max(0, Math.ceil(-Math.log10(gap) - 1e-9)), 10) : 0;
+  const exact = (d: number) =>
+    values.every((v) => Math.abs(v - Number(v.toFixed(d))) <= 1e-9 * Math.max(1, Math.abs(v)));
+  let digits = base;
+  while (digits < base + 2 && !exact(digits)) digits++;
+  return digits;
+}
+
+/** Legend tick value: the number only (the unit is on the end labels); on_ratio in percent. */
+export function formatTick(value: number, agg: Aggregation, lang: string, digits: number): string {
+  const v = agg === 'on_ratio' ? value * 100 : value;
+  // signDisplay: a small negative value rounded to 0 shows as 0, not -0
+  return new Intl.NumberFormat(lang, { maximumFractionDigits: digits, signDisplay: 'negative' }).format(v);
+}
+
 export function formatValue(value: number, agg: Aggregation, unit: string | undefined, lang: string): string {
   if (agg === 'on_ratio') {
     const pct = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(value * 100);

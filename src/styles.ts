@@ -74,6 +74,8 @@ export const STYLES = `
     font-weight: 600;
   }
   .legend {
+    /* the gradient and the tick positions run left to right, so the end labels must too */
+    direction: ltr;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -85,6 +87,47 @@ export const STYLES = `
     flex: 1;
     height: 8px;
     border-radius: 4px;
+  }
+  /* with ticks: the bar, tick marks and tick labels stacked; the end labels stay level with the bar */
+  .legend.with-ticks {
+    align-items: flex-start;
+  }
+  .legend.with-ticks .legend-label {
+    line-height: 14px;
+  }
+  .legend-scale {
+    flex: 1;
+    min-width: 0;
+    padding-top: 3px;
+  }
+  .legend-scale .legend-bar {
+    display: block;
+  }
+  .legend-ticks,
+  .legend-values {
+    display: block;
+    position: relative;
+  }
+  .legend-ticks {
+    height: 4px;
+  }
+  .legend-tick {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 4px;
+    margin-left: -0.5px;
+    background: currentColor;
+  }
+  .legend-values {
+    height: 14px;
+    line-height: 14px;
+    margin-top: 1px;
+  }
+  .legend-value {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
   }
   .warning {
     padding: 8px 12px;

@@ -2,6 +2,9 @@ import {
   AGGREGATIONS,
   CELL_SPACINGS,
   COLUMN_UNITS,
+  LEGEND_VALUES,
+  LEGEND_TICKS,
+  MAX_LEGEND_TICKS,
   MAX_ROWS,
   PRESET_NAMES,
   ROW_UNITS,
@@ -96,6 +99,18 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
         { name: 'newest_first', selector: { boolean: {} }, default: false },
       ],
     },
+    {
+      name: '',
+      type: 'grid',
+      schema: [
+        { name: 'legend_ticks', selector: select(LEGEND_TICKS, 'legend_ticks') },
+        { name: 'legend_values', selector: select(LEGEND_VALUES, 'legend_values') },
+        {
+          name: 'legend_tick_count',
+          selector: { number: { min: 2, max: MAX_LEGEND_TICKS, mode: 'box' } },
+        },
+      ],
+    },
   ];
 
   return {
@@ -104,6 +119,7 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
     computeHelper: (s) => {
       if (s.name === 'column_unit') return t('editor.column_unit_helper');
       if (s.name === 'aggregation') return t('editor.aggregation_helper');
+      if (s.name === 'legend_tick_count') return t('editor.legend_tick_count_helper');
       return undefined;
     },
     assertConfig: (config) => {

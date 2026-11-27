@@ -29,6 +29,14 @@ export const GALLERY: GalleryItem[] = [
     config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · no spacing', cell_spacing: 'none' },
   },
   {
+    id: 'day-hour-temperature-legend-ticks',
+    config: { entity: 'sensor.outdoor_temperature', title: 'Outdoor · legend ticks', legend_ticks: 'auto' },
+  },
+  {
+    id: 'day-hour-co2-legend-steps',
+    config: { entity: 'sensor.office_co2', title: 'CO₂ · legend at the color steps', legend_ticks: 'steps' },
+  },
+  {
     id: 'hour-5min-power',
     config: { entity: 'sensor.house_power', title: 'Power · hours × 5 min', row_unit: 'hour' },
   },

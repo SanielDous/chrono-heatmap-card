@@ -105,6 +105,38 @@ describe('chrono-heatmap-card', () => {
     expect(newest.label).toMatch(/26/); // NOW is Mon 2026-10-26
   });
 
+  it('shows legend ticks and non-overlapping values when configured', async () => {
+    const legend = async (config: Record<string, unknown>) => {
+      const el = makeCard({ entity: 'sensor.outdoor_temperature', rows: 1, ...config });
+      await settle(el);
+      const root = el.shadowRoot!;
+      const result = {
+        ticks: root.querySelectorAll('.legend-tick').length,
+        values: [...root.querySelectorAll('.legend-value')].map((v) => v.textContent),
+        ends: [...root.querySelectorAll('.legend-label')].map((v) => v.textContent),
+      };
+      el.remove();
+      return result;
+    };
+    const plain = await legend({});
+    expect(plain).toEqual({ ticks: 0, values: [], ends: ['-10 °C', '35 °C'] });
+
+    const auto = await legend({ legend_ticks: 'auto' });
+    expect(auto.ticks).toBe(4);
+    expect(auto.values).toEqual(['0', '10', '20', '30']);
+    expect(auto.ends).toEqual(plain.ends);
+
+    expect((await legend({ legend_ticks: 'auto', legend_values: 'alternate' })).values).toEqual(['0', '20']);
+    expect((await legend({ legend_ticks: 'auto', legend_values: 'none' })).values).toEqual([]);
+    expect((await legend({ legend_ticks: 'auto', legend_tick_count: 9 })).ticks).toBe(8);
+
+    // ten steps 4 °C apart do not all fit under a 300 px card: every label that would touch its neighbour is left out
+    const steps = await legend({ legend_ticks: 'steps' });
+    expect(steps.ticks).toBe(10);
+    // every second value, evenly, rather than as many as squeeze in
+    expect(steps.values).toEqual(['-6', '2', '10', '18', '26']);
+  });
+
   it('renders on/off ratio for a binary sensor from history', async () => {
     const el = makeCard({ entity: 'binary_sensor.front_door', rows: 3 });
     await settle(el);

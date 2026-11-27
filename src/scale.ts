@@ -282,3 +282,31 @@ export function legendGradient(scale: ResolvedScale, direction = 'to right'): st
   );
   return `linear-gradient(${direction}, ${parts.join(', ')})`;
 }
+
+/** Round values between min and max, 1, 2 or 5 × 10ⁿ apart, about `count` of them (as d3's ticks). */
+export function niceTicks(min: number, max: number, count: number): number[] {
+  const span = max - min;
+  if (!(span > 0) || !(count > 0)) return [];
+  const raw = span / count;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const f = raw / mag;
+  const step = (f >= Math.sqrt(50) ? 10 : f >= Math.sqrt(10) ? 5 : f >= Math.SQRT2 ? 2 : 1) * mag;
+  // round away floating point noise (0.30000000000000004)
+  const decimals = Math.max(0, -Math.floor(Math.log10(step)));
+  const ticks: number[] = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) {
+    ticks.push(Number(v.toFixed(decimals)));
+  }
+  return ticks;
+}
+
+/**
+ * Tick values for the legend bar, ascending; values at (or very near) the ends are left out because the ends are
+ * labelled already. `auto`: round values; `steps`: the color steps of the scale.
+ */
+export function legendTicks(scale: ResolvedScale, mode: 'auto' | 'steps', count: number): number[] {
+  const { min, max } = scale;
+  const margin = (max - min) * 0.01;
+  const values = mode === 'steps' ? scale.stops.map((s) => s.value) : niceTicks(min, max, count);
+  return [...new Set(values)].filter((v) => v > min + margin && v < max - margin);
+}

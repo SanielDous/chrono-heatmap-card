@@ -4,6 +4,10 @@ export type Aggregation = 'mean' | 'min' | 'max' | 'sum' | 'last' | 'change' | '
 export type Source = 'auto' | 'statistics' | 'history';
 export type Orientation = 'horizontal' | 'vertical';
 export type CellSpacing = 'normal' | 'small' | 'none';
+/** Ticks on the legend bar: none, round values, or at the color steps of the scale. */
+export type LegendTicks = 'none' | 'auto' | 'steps';
+/** Which ticks get a value label. */
+export type LegendLabels = 'all' | 'alternate' | 'none';
 export type PresetName =
   | 'temperature'
   | 'temperature_cold'
@@ -46,6 +50,9 @@ export interface CardConfig {
   on_states?: string[];
   scale?: ScaleConfig;
   show_legend?: boolean;
+  legend_ticks?: LegendTicks;
+  legend_labels?: LegendLabels;
+  legend_tick_count?: number;
   show_labels?: boolean;
   newest_first?: boolean;
 }
@@ -75,6 +82,10 @@ export interface NormalizedConfig {
   on_states?: string[];
   scale: NormalizedScale;
   show_legend: boolean;
+  legend_ticks: LegendTicks;
+  legend_labels: LegendLabels;
+  /** Rough number of `auto` ticks; undefined = fitted to the legend width. */
+  legend_tick_count?: number;
   show_labels: boolean;
   /** Newest row at the top (left when vertical) instead of the bottom (right). */
   newest_first: boolean;
@@ -84,6 +95,9 @@ export const ROW_UNITS: RowUnit[] = ['hour', 'day', 'week', 'month', 'year'];
 export const COLUMN_UNITS: ColumnUnit[] = ['minute', '5minute', 'hour', 'day', 'week', 'month'];
 export const AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'sum', 'last', 'change', 'on_ratio'];
 export const CELL_SPACINGS: CellSpacing[] = ['normal', 'small', 'none'];
+export const LEGEND_TICKS: LegendTicks[] = ['none', 'auto', 'steps'];
+export const LEGEND_LABELS: LegendLabels[] = ['all', 'alternate', 'none'];
+export const MAX_LEGEND_TICKS = 20;
 export const PRESET_NAMES: PresetName[] = [
   'temperature',
   'temperature_cold',
@@ -217,6 +231,14 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     throw new ConfigError('error.rows', { max: MAX_ROWS });
   }
 
+  const legend_tick_count = optionalNumber(config.legend_tick_count, 'legend_tick_count');
+  if (
+    legend_tick_count !== undefined &&
+    (!Number.isInteger(legend_tick_count) || legend_tick_count < 2 || legend_tick_count > MAX_LEGEND_TICKS)
+  ) {
+    throw new ConfigError('error.legend_tick_count', { max: MAX_LEGEND_TICKS });
+  }
+
   let on_states: string[] | undefined;
   if (config.on_states !== undefined) {
     if (!Array.isArray(config.on_states) || config.on_states.length === 0) {
@@ -239,6 +261,9 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     on_states,
     scale: normalizeScale(config.scale),
     show_legend: config.show_legend ?? true,
+    legend_ticks: oneOf(config.legend_ticks, LEGEND_TICKS, 'legend_ticks') ?? 'none',
+    legend_labels: oneOf(config.legend_labels, LEGEND_LABELS, 'legend_labels') ?? 'all',
+    legend_tick_count,
     show_labels: config.show_labels ?? true,
     newest_first: bool(config.newest_first, 'newest_first') ?? false,
   };

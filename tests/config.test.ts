@@ -30,6 +30,9 @@ describe('normalizeConfig', () => {
     expect(c.show_labels).toBe(true);
     expect(c.newest_first).toBe(false);
     expect(c.cell_spacing).toBe('normal');
+    expect(c.legend_ticks).toBe('none');
+    expect(c.legend_labels).toBe('all');
+    expect(c.legend_tick_count).toBeUndefined();
   });
 
   it('picks the default column unit per row unit', () => {
@@ -134,6 +137,25 @@ describe('normalizeConfig', () => {
     expect(errorKey(() => normalizeConfig({ ...base, cell_spacing: 'tight' as never }))).toBe(
       'error.invalid_option',
     );
+  });
+
+  it('validates the legend options', () => {
+    const c = normalizeConfig({
+      ...base,
+      legend_ticks: 'steps',
+      legend_labels: 'alternate',
+      legend_tick_count: 8,
+    });
+    expect([c.legend_ticks, c.legend_labels, c.legend_tick_count]).toEqual(['steps', 'alternate', 8]);
+    expect(errorKey(() => normalizeConfig({ ...base, legend_ticks: 'many' as never }))).toBe(
+      'error.invalid_option',
+    );
+    expect(errorKey(() => normalizeConfig({ ...base, legend_labels: 'some' as never }))).toBe(
+      'error.invalid_option',
+    );
+    for (const legend_tick_count of [1, 2.5, 21]) {
+      expect(errorKey(() => normalizeConfig({ ...base, legend_tick_count }))).toBe('error.legend_tick_count');
+    }
   });
 
   it('rejects min >= max', () => {

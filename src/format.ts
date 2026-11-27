@@ -156,6 +156,14 @@ export function formatPeriod(
   }
 }
 
+/** Legend tick label: the number only (the unit is on the end labels); on_ratio in percent. */
+export function formatTick(value: number, agg: Aggregation, lang: string): string {
+  const v = agg === 'on_ratio' ? value * 100 : value;
+  const abs = Math.abs(v);
+  const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+  return new Intl.NumberFormat(lang, { maximumFractionDigits: digits }).format(v);
+}
+
 export function formatValue(value: number, agg: Aggregation, unit: string | undefined, lang: string): string {
   if (agg === 'on_ratio') {
     const pct = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(value * 100);

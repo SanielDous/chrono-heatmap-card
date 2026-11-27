@@ -86,6 +86,47 @@ export const STYLES = `
     height: 8px;
     border-radius: 4px;
   }
+  /* with ticks: the bar, tick marks and tick labels stacked; the end labels stay level with the bar */
+  .legend:has(.legend-scale) {
+    align-items: flex-start;
+  }
+  .legend:has(.legend-scale) .legend-label {
+    line-height: 14px;
+  }
+  .legend-scale {
+    flex: 1;
+    min-width: 0;
+    padding-top: 3px;
+  }
+  .legend-scale .legend-bar {
+    display: block;
+  }
+  .legend-ticks,
+  .legend-values {
+    display: block;
+    position: relative;
+  }
+  .legend-ticks {
+    height: 4px;
+  }
+  .legend-tick {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 4px;
+    margin-left: -0.5px;
+    background: currentColor;
+  }
+  .legend-values {
+    height: 14px;
+    line-height: 14px;
+    margin-top: 1px;
+  }
+  .legend-value {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
   .warning {
     padding: 8px 12px;
     border-radius: 8px;

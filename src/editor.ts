@@ -2,7 +2,7 @@ import {
   AGGREGATIONS,
   CELL_SPACINGS,
   COLUMN_UNITS,
-  LEGEND_LABELS,
+  LEGEND_VALUES,
   LEGEND_TICKS,
   MAX_LEGEND_TICKS,
   MAX_ROWS,
@@ -104,7 +104,7 @@ export function getConfigFormSchema(lang: string = uiLanguage()): ConfigForm {
       type: 'grid',
       schema: [
         { name: 'legend_ticks', selector: select(LEGEND_TICKS, 'legend_ticks') },
-        { name: 'legend_labels', selector: select(LEGEND_LABELS, 'legend_labels') },
+        { name: 'legend_values', selector: select(LEGEND_VALUES, 'legend_values') },
         {
           name: 'legend_tick_count',
           selector: { number: { min: 2, max: MAX_LEGEND_TICKS, mode: 'box' } },

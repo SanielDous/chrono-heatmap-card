@@ -286,17 +286,19 @@ export function legendGradient(scale: ResolvedScale, direction = 'to right'): st
 /** Round values between min and max, 1, 2 or 5 × 10ⁿ apart, about `count` of them (as d3's ticks). */
 export function niceTicks(min: number, max: number, count: number): number[] {
   const span = max - min;
-  if (!(span > 0) || !(count > 0)) return [];
+  if (!(span > 0) || !Number.isFinite(span) || !(count > 0)) return [];
   const raw = span / count;
   const mag = 10 ** Math.floor(Math.log10(raw));
   const f = raw / mag;
   const step = (f >= Math.sqrt(50) ? 10 : f >= Math.sqrt(10) ? 5 : f >= Math.SQRT2 ? 2 : 1) * mag;
-  // round away floating point noise (0.30000000000000004)
-  const decimals = Math.max(0, -Math.floor(Math.log10(step)));
+  // by index, so float errors do not add up; toFixed removes noise like 0.30000000000000004, `|| 0` turns -0 into 0
+  const decimals = Math.min(Math.max(0, -Math.floor(Math.log10(step))), 100);
+  const first = Math.ceil(min / step - 1e-9);
+  const last = Math.floor(max / step + 1e-9);
+  if (last - first > 1000) return [];
   const ticks: number[] = [];
-  for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-9; v += step) {
-    ticks.push(Number(v.toFixed(decimals)));
-  }
+  // counted from 0: near 1e16 `first + 1` is `first` again
+  for (let k = 0; k <= last - first; k++) ticks.push(Number(((first + k) * step).toFixed(decimals)) || 0);
   return ticks;
 }
 

@@ -7,7 +7,7 @@ export type CellSpacing = 'normal' | 'small' | 'none';
 /** Ticks on the legend bar: none, round values, or at the color steps of the scale. */
 export type LegendTicks = 'none' | 'auto' | 'steps';
 /** Which ticks get a value label. */
-export type LegendLabels = 'all' | 'alternate' | 'none';
+export type LegendValues = 'all' | 'alternate' | 'none';
 export type PresetName =
   | 'temperature'
   | 'temperature_cold'
@@ -51,7 +51,7 @@ export interface CardConfig {
   scale?: ScaleConfig;
   show_legend?: boolean;
   legend_ticks?: LegendTicks;
-  legend_labels?: LegendLabels;
+  legend_values?: LegendValues;
   legend_tick_count?: number;
   show_labels?: boolean;
   newest_first?: boolean;
@@ -83,7 +83,7 @@ export interface NormalizedConfig {
   scale: NormalizedScale;
   show_legend: boolean;
   legend_ticks: LegendTicks;
-  legend_labels: LegendLabels;
+  legend_values: LegendValues;
   /** Rough number of `auto` ticks; undefined = fitted to the legend width. */
   legend_tick_count?: number;
   show_labels: boolean;
@@ -96,7 +96,7 @@ export const COLUMN_UNITS: ColumnUnit[] = ['minute', '5minute', 'hour', 'day', '
 export const AGGREGATIONS: Aggregation[] = ['mean', 'min', 'max', 'sum', 'last', 'change', 'on_ratio'];
 export const CELL_SPACINGS: CellSpacing[] = ['normal', 'small', 'none'];
 export const LEGEND_TICKS: LegendTicks[] = ['none', 'auto', 'steps'];
-export const LEGEND_LABELS: LegendLabels[] = ['all', 'alternate', 'none'];
+export const LEGEND_VALUES: LegendValues[] = ['all', 'alternate', 'none'];
 export const MAX_LEGEND_TICKS = 20;
 export const PRESET_NAMES: PresetName[] = [
   'temperature',
@@ -262,7 +262,7 @@ export function normalizeConfig(config: CardConfig): NormalizedConfig {
     scale: normalizeScale(config.scale),
     show_legend: config.show_legend ?? true,
     legend_ticks: oneOf(config.legend_ticks, LEGEND_TICKS, 'legend_ticks') ?? 'none',
-    legend_labels: oneOf(config.legend_labels, LEGEND_LABELS, 'legend_labels') ?? 'all',
+    legend_values: oneOf(config.legend_values, LEGEND_VALUES, 'legend_values') ?? 'all',
     legend_tick_count,
     show_labels: config.show_labels ?? true,
     newest_first: bool(config.newest_first, 'newest_first') ?? false,

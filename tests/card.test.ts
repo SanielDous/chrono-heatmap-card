@@ -126,15 +126,15 @@ describe('chrono-heatmap-card', () => {
     expect(auto.values).toEqual(['0', '10', '20', '30']);
     expect(auto.ends).toEqual(plain.ends);
 
-    expect((await legend({ legend_ticks: 'auto', legend_labels: 'alternate' })).values).toEqual(['0', '20']);
-    expect((await legend({ legend_ticks: 'auto', legend_labels: 'none' })).values).toEqual([]);
+    expect((await legend({ legend_ticks: 'auto', legend_values: 'alternate' })).values).toEqual(['0', '20']);
+    expect((await legend({ legend_ticks: 'auto', legend_values: 'none' })).values).toEqual([]);
     expect((await legend({ legend_ticks: 'auto', legend_tick_count: 9 })).ticks).toBe(8);
 
     // ten steps 4 °C apart do not all fit under a 300 px card: every label that would touch its neighbour is left out
     const steps = await legend({ legend_ticks: 'steps' });
     expect(steps.ticks).toBe(10);
-    expect(steps.values.length).toBeGreaterThan(2);
-    expect(steps.values.length).toBeLessThan(10);
+    // every second value, evenly, rather than as many as squeeze in
+    expect(steps.values).toEqual(['-6', '2', '10', '18', '26']);
   });
 
   it('renders on/off ratio for a binary sensor from history', async () => {

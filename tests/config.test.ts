@@ -31,7 +31,7 @@ describe('normalizeConfig', () => {
     expect(c.newest_first).toBe(false);
     expect(c.cell_spacing).toBe('normal');
     expect(c.legend_ticks).toBe('none');
-    expect(c.legend_labels).toBe('all');
+    expect(c.legend_values).toBe('all');
     expect(c.legend_tick_count).toBeUndefined();
   });
 
@@ -143,14 +143,14 @@ describe('normalizeConfig', () => {
     const c = normalizeConfig({
       ...base,
       legend_ticks: 'steps',
-      legend_labels: 'alternate',
+      legend_values: 'alternate',
       legend_tick_count: 8,
     });
-    expect([c.legend_ticks, c.legend_labels, c.legend_tick_count]).toEqual(['steps', 'alternate', 8]);
+    expect([c.legend_ticks, c.legend_values, c.legend_tick_count]).toEqual(['steps', 'alternate', 8]);
     expect(errorKey(() => normalizeConfig({ ...base, legend_ticks: 'many' as never }))).toBe(
       'error.invalid_option',
     );
-    expect(errorKey(() => normalizeConfig({ ...base, legend_labels: 'some' as never }))).toBe(
+    expect(errorKey(() => normalizeConfig({ ...base, legend_values: 'some' as never }))).toBe(
       'error.invalid_option',
     );
     for (const legend_tick_count of [1, 2.5, 21]) {

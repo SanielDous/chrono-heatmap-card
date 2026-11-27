@@ -17,6 +17,7 @@ import {
   formatRowLabel,
   formatTick,
   formatValue,
+  tickDigits,
 } from './format';
 import { buildGrid, resolveTimeZone, resolveWeekStart, type Grid } from './grid';
 import type { HassEntity, HomeAssistant } from './hass-types';
@@ -432,6 +433,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const showLegend = cfg.show_legend && !this._error && this._values && this._scale;
     this._legend.hidden = !showLegend;
     this._legend.innerHTML = showLegend ? this._legendHtml(this._scale!, cfg) : '';
+    this._legend.classList.toggle('with-ticks', !!this._legend.querySelector('.legend-scale'));
     this._renderTooltip();
   }
 
@@ -564,18 +566,32 @@ export class ChronoHeatmapCard extends HTMLElement {
     const pos = (v: number) => (v - scale.min) / (scale.max - scale.min);
     const pct = (f: number) => `${Math.round(f * 10000) / 100}%`;
 
-    const values: string[] = [];
-    let right = -Infinity;
-    ticks.forEach((v, i) => {
-      if (cfg.legend_labels === 'none' || (cfg.legend_labels === 'alternate' && i % 2 === 1)) return;
-      const text = formatTick(v, this._agg, lang);
+    const ratio = this._agg === 'on_ratio' ? 100 : 1;
+    const digits = tickDigits([scale.min, ...ticks, scale.max].map((v) => v * ratio));
+    const placed = ticks.map((v, i) => {
+      const text = formatTick(v, this._agg, lang, digits);
       const w = text.length * LEGEND_CHAR_WIDTH;
-      // centered under the tick, but kept inside the bar; skipped where it would touch its left neighbour
+      // centered under the tick, but kept inside the bar
       const center = Math.min(Math.max(pos(v) * barWidth, w / 2), barWidth - w / 2);
-      if (center - w / 2 < right + 6) return;
-      right = center + w / 2;
-      values.push(`<span class="legend-value" style="left:${pct(center / barWidth)}">${esc(text)}</span>`);
+      // round ticks are numbered from 0, so every second one lands on 0, 2·step, 4·step …
+      const index =
+        cfg.legend_ticks === 'auto' && ticks.length > 1 ? Math.round(v / (ticks[1] - ticks[0])) : i;
+      return { text, left: center - w / 2, right: center + w / 2, center, index };
     });
+    // every n-th value, with the smallest n at which none of them touch (alternate: at least every second)
+    let shown: typeof placed = [];
+    if (cfg.legend_values !== 'none') {
+      for (let n = cfg.legend_values === 'alternate' ? 2 : 1; n <= Math.max(ticks.length, 2); n++) {
+        const pick = placed.filter((p) => ((p.index % n) + n) % n === 0);
+        if (pick.length && pick.every((p, k) => k === 0 || p.left >= pick[k - 1].right + 6)) {
+          shown = pick;
+          break;
+        }
+      }
+    }
+    const values = shown.map(
+      (p) => `<span class="legend-value" style="left:${pct(p.center / barWidth)}">${esc(p.text)}</span>`,
+    );
     const tickMarks = ticks
       .map((v) => `<span class="legend-tick" style="left:${pct(pos(v))}"></span>`)
       .join('');

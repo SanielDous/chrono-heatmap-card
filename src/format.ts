@@ -156,12 +156,20 @@ export function formatPeriod(
   }
 }
 
-/** Legend tick label: the number only (the unit is on the end labels); on_ratio in percent. */
-export function formatTick(value: number, agg: Aggregation, lang: string): string {
+/** Fraction digits that keep neighbouring values apart, from the smallest gap between them (0.5 → 1, 0.05 → 2). */
+export function tickDigits(values: number[]): number {
+  let gap = Infinity;
+  for (let i = 1; i < values.length; i++) {
+    const d = Math.abs(values[i] - values[i - 1]);
+    if (d > 0 && d < gap) gap = d;
+  }
+  return Number.isFinite(gap) ? Math.min(Math.max(0, Math.ceil(-Math.log10(gap) - 1e-9)), 10) : 0;
+}
+
+/** Legend tick value: the number only (the unit is on the end labels); on_ratio in percent. */
+export function formatTick(value: number, agg: Aggregation, lang: string, digits: number): string {
   const v = agg === 'on_ratio' ? value * 100 : value;
-  const abs = Math.abs(v);
-  const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
-  return new Intl.NumberFormat(lang, { maximumFractionDigits: digits }).format(v);
+  return new Intl.NumberFormat(lang, { maximumFractionDigits: digits }).format(v || 0);
 }
 
 export function formatValue(value: number, agg: Aggregation, unit: string | undefined, lang: string): string {

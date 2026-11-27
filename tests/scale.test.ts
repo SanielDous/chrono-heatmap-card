@@ -166,6 +166,15 @@ describe('legend ticks', () => {
     expect(niceTicks(5, 5, 5)).toEqual([]);
   });
 
+  it('has no float noise, no -0 and no endless loop for extreme ranges', () => {
+    const t = niceTicks(-0.35, 0.35, 7);
+    expect(t).toEqual([-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3]);
+    expect(Object.is(t[3], 0)).toBe(true);
+    expect(niceTicks(1.1, 1.5, 4)).toEqual([1.1, 1.2, 1.3, 1.4, 1.5]);
+    expect(niceTicks(1e16, 1e16 + 4, 5).length).toBeLessThanOrEqual(6);
+    expect(niceTicks(0, 1e-200, 5)).toHaveLength(6);
+  });
+
   it('leaves out ticks at the labelled ends', () => {
     const s = resolveScale({ preset: 'temperature' }, { ...ctx, unit: '°C' });
     expect(legendTicks(s, 'auto', 4)).toEqual([0, 10, 20, 30]);

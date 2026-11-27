@@ -90,7 +90,7 @@ describe('getConfigFormSchema', () => {
         'cell_spacing',
         'column_unit',
         'entity',
-        'legend_labels',
+        'legend_values',
         'legend_tick_count',
         'legend_ticks',
         'newest_first',

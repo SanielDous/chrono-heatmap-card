@@ -39,6 +39,9 @@ describe('legend tick values', () => {
     expect(tickDigits([-10, 0, 10, 20])).toBe(0);
     expect(tickDigits([0.1, 0.15, 0.2])).toBe(2);
     expect(tickDigits([5])).toBe(0);
+    expect(tickDigits([10, 12.5, 15, 20])).toBe(1);
+    expect(tickDigits([0.25, 0.5, 0.75])).toBe(2);
+    expect(tickDigits([17.325, 34.65])).toBe(2); // at most two digits more than the spacing needs
     const fmt = (values: number[]) => values.map((v) => formatTick(v, 'mean', 'en', tickDigits(values)));
     expect(fmt([1012, 1012.5, 1013, 1013.5, 1014])).toEqual([
       '1,012',
@@ -52,6 +55,7 @@ describe('legend tick values', () => {
 
   it('never shows -0 and shows on_ratio in percent', () => {
     expect(formatTick(-0, 'mean', 'en', 1)).toBe('0');
+    expect(formatTick(-0.4, 'mean', 'en', 0)).toBe('0');
     expect(formatTick(0.25, 'on_ratio', 'de', 0)).toBe('25');
   });
 });

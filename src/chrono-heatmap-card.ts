@@ -567,7 +567,7 @@ export class ChronoHeatmapCard extends HTMLElement {
     const pct = (f: number) => `${Math.round(f * 10000) / 100}%`;
 
     const ratio = this._agg === 'on_ratio' ? 100 : 1;
-    const digits = tickDigits([scale.min, ...ticks, scale.max].map((v) => v * ratio));
+    const digits = tickDigits(ticks.map((v) => v * ratio));
     const placed = ticks.map((v, i) => {
       const text = formatTick(v, this._agg, lang, digits);
       const w = text.length * LEGEND_CHAR_WIDTH;
